@@ -25,6 +25,8 @@ final class Salary extends Model
         'month',
         'year',
         'notes',
+        'pay_slip_id',
+        'auto_generated',
     ];
 
     protected $casts = [
@@ -38,11 +40,17 @@ final class Salary extends Model
         'tax_amount' => 'decimal:2',
         'month' => 'integer',
         'year' => 'integer',
+        'auto_generated' => 'boolean',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function paySlip(): BelongsTo
+    {
+        return $this->belongsTo(PaySlip::class);
     }
 
     public function calculateGrossSalary(): float
