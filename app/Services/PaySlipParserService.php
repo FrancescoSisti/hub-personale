@@ -133,12 +133,14 @@ final class PaySlipParserService
 
     private function extractBaseSalary(string $text): ?float
     {
-        // Pattern comuni per stipendio base
+        // Pattern comuni per stipendio base in buste paga italiane
         $patterns = [
-            '/stipendio\s*base[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/retribuzione\s*base[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/paga\s*base[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/salario[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
+            '/PAGA\s*BASE[:\s]*(\d+[.,]\d{2})/i',
+            '/stipendio\s*base[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/retribuzione\s*base[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/paga\s*base[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/salario[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/\*\*Z00001Retribuzione\s+[\d,\.]+\s+[\d,\.]+\w+\s+(\d+[.,]\d{2})/i',
         ];
 
         return $this->extractAmountByPatterns($text, $patterns);
@@ -147,10 +149,15 @@ final class PaySlipParserService
     private function extractBonus(string $text): ?float
     {
         $patterns = [
-            '/bonus[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/premio[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/incentivo[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/gratifica[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
+            '/bonus[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/premio[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/incentivo[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/gratifica[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/contingenza[:\s]*(\d+[.,]\d{2})/i',
+            '/CONTING\.[:\s]*(\d+[.,]\d{2})/i',
+            '/3\'ELEMEN\.[:\s]*(\d+[.,]\d{2})/i',
+            '/\*\*Z5000013ma\s+Mensilita[^\d]+(\d+[.,]\d{2})/i',
+            '/\*\*Z5002214ma\s+Mensilita[^\d]+(\d+[.,]\d{2})/i',
         ];
 
         return $this->extractAmountByPatterns($text, $patterns);
@@ -160,25 +167,36 @@ final class PaySlipParserService
     {
         $overtimeHours = null;
         $overtimeRate = null;
+        $overtimeAmount = null;
 
-        // Pattern per ore straordinari
+        // Pattern per ore straordinari italiane
         $hourPatterns = [
-            '/straordinari[:\s]*(\d+(?:\.\d{1,2})?)\s*ore/i',
-            '/ore\s*straordinari[:\s]*(\d+(?:\.\d{1,2})?)/i',
+            '/straordinari[:\s]*(\d+[.,]\d{1,5})\s*ore/i',
+            '/ore\s*straordinari[:\s]*(\d+[.,]\d{1,5})/i',
+            '/\*\*Z40015Straordinario.*?(\d+[.,]\d{5})ORE/i',
+        ];
+
+        // Pattern per importo straordinari
+        $amountPatterns = [
+            '/\*\*Z40015Straordinario[^€]*(\d+[.,]\d{2})/i',
+            '/straordinario.*?(\d+[.,]\d{2})€?/i',
         ];
 
         // Pattern per tariffa straordinari
         $ratePatterns = [
-            '/straordinari.*?€?\s*(\d+(?:\.\d{2})?)\s*\/\s*ora/i',
-            '/€?\s*(\d+(?:\.\d{2})?)\s*\/\s*ora.*straordinari/i',
+            '/straordinari.*?€?\s*(\d+[.,]\d{2})\s*\/\s*ora/i',
+            '/€?\s*(\d+[.,]\d{2})\s*\/\s*ora.*straordinari/i',
+            '/\*\*Z40015Straordinario.*?(\d+[.,]\d{5})\s+(\d+[.,]\d{5})ORE/i',
         ];
 
         $overtimeHours = $this->extractAmountByPatterns($text, $hourPatterns);
+        $overtimeAmount = $this->extractAmountByPatterns($text, $amountPatterns);
         $overtimeRate = $this->extractAmountByPatterns($text, $ratePatterns);
 
         return [
             'hours' => $overtimeHours,
             'rate' => $overtimeRate,
+            'amount' => $overtimeAmount,
         ];
     }
 
@@ -208,16 +226,20 @@ final class PaySlipParserService
     private function extractTotals(string $text): array
     {
         $grossPatterns = [
-            '/totale\s*lordo[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/imponibile[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/lordo[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
+            '/totale\s*lordo[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/TOTALEsCOMPETENZE[:\s]*(\d+[.,]\d{2})/i',
+            '/imponibile[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/lordo[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/COMPETENZE[^€]*(\d+[.,]\d{2})/i',
         ];
 
         $netPatterns = [
-            '/totale\s*netto[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/netto\s*in\s*busta[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/da\s*pagare[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/netto[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
+            '/(\d+[.,]\d{2})€\s*$/m',
+            '/totale\s*netto[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/TOTALEsNETTOsDELsMESE[:\s]*(\d+[.,]\d{2})/i',
+            '/netto\s*in\s*busta[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/da\s*pagare[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/netto[:\s]*€?\s*(\d+[.,]\d{2})/i',
         ];
 
         return [
@@ -230,7 +252,14 @@ final class PaySlipParserService
     {
         foreach ($patterns as $pattern) {
             if (preg_match($pattern, $text, $matches)) {
-                return (float) str_replace('.', '', $matches[1]);
+                // Gestisce sia il formato 1.234,56 che 1234.56
+                $amount = str_replace(',', '.', $matches[1]);
+                // Se ci sono più di 3 cifre prima del punto, è un separatore delle migliaia
+                if (preg_match('/(\d{1,3})\.(\d{3})\.(\d{2})/', $amount)) {
+                    $amount = str_replace('.', '', $amount);
+                    $amount = substr($amount, 0, -2) . '.' . substr($amount, -2);
+                }
+                return (float) $amount;
             }
         }
         return null;
@@ -241,11 +270,12 @@ final class PaySlipParserService
         $currentYear = date('Y');
         $currentMonth = date('n');
 
-        // Prova a estrarre da patterns nel testo
+        // Prova a estrarre da patterns nel testo delle buste paga italiane
         $patterns = [
             '/(\d{1,2})\/(\d{4})/i', // MM/YYYY
             '/(\d{1,2})-(\d{4})/i', // MM-YYYY
             '/(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s*(\d{4})/i',
+            '/PERIODOsDIsRETRIBUZIONE[^a-zA-Z]*(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s*(\d{4})/i',
         ];
 
         $monthNames = [

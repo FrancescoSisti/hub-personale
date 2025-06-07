@@ -7,7 +7,8 @@ import PaySlipUpload from '@/components/payslip/PaySlipUpload.vue'
 import PaySlipList from '@/components/payslip/PaySlipList.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Upload, FileText, Zap } from 'lucide-vue-next'
+import { Upload, FileText, Zap, CheckCircle, XCircle } from 'lucide-vue-next'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface PaySlip {
 	id: number
@@ -28,6 +29,8 @@ interface PaySlip {
 
 interface Props {
 	paySlips: PaySlip[]
+	message?: string
+	errors?: Record<string, string[]>
 }
 
 const props = defineProps<Props>()
@@ -77,6 +80,23 @@ const pendingCount = props.paySlips.filter(p => !p.processed && !p.processing_er
 					Carica Busta Paga
 				</Button>
 			</div>
+
+			<!-- Messages -->
+			<Alert v-if="message" class="border-green-200 bg-green-50">
+				<CheckCircle class="h-4 w-4 text-green-600" />
+				<AlertDescription class="text-green-800">
+					{{ message }}
+				</AlertDescription>
+			</Alert>
+
+			<Alert v-if="errors && Object.keys(errors).length > 0" variant="destructive">
+				<XCircle class="h-4 w-4" />
+				<AlertDescription>
+					<div v-for="(errorList, field) in errors" :key="field">
+						<span v-for="error in errorList" :key="error">{{ error }}</span>
+					</div>
+				</AlertDescription>
+			</Alert>
 
 			<!-- Statistics Cards -->
 			<div class="grid gap-4 md:grid-cols-3">
