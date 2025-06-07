@@ -18,16 +18,8 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import DeletePaySlipDialog from './DeletePaySlipDialog.vue'
+import EditPaySlipDataDialog from './EditPaySlipDataDialog.vue'
 import {
 	FileText,
 	Download,
@@ -38,6 +30,7 @@ import {
 	Clock,
 	Zap,
 	Euro,
+	Edit,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -51,10 +44,23 @@ interface PaySlip {
 	month?: number
 	year?: number
 	created_at: string
+	extracted_data?: {
+		base_salary?: number
+		bonus?: number
+		overtime_hours?: number
+		overtime_rate?: number
+		taxes?: number
+		deductions?: number
+		gross_salary?: number
+		net_salary?: number
+		month?: number
+		year?: number
+	}
 	salary?: {
 		id: number
 		net_salary: number
 		gross_salary: number
+		auto_generated: boolean
 	}
 }
 
@@ -65,6 +71,9 @@ interface Props {
 const props = defineProps<Props>()
 
 const deletePaySlipId = ref<number | null>(null)
+const editPaySlip = ref<PaySlip | null>(null)
+const showDeleteDialog = ref(false)
+const showEditDialog = ref(false)
 
 const formatFileSize = (bytes: number): string => {
 	if (bytes === 0) return '0 Bytes'
@@ -141,19 +150,33 @@ const processPaySlip = async (paySlip: PaySlip) => {
 	}
 }
 
-const confirmDelete = (paySlipId: number) => {
-	deletePaySlipId.value = paySlipId
+const confirmDelete = (paySlip: PaySlip) => {
+	editPaySlip.value = paySlip
+	showDeleteDialog.value = true
 }
 
 const deletePaySlip = async () => {
-	if (!deletePaySlipId.value) return
+	if (!editPaySlip.value) return
 
 	try {
-		await router.delete(`/pay-slips/${deletePaySlipId.value}`)
-		deletePaySlipId.value = null
+		await router.delete(`/pay-slips/${editPaySlip.value.id}`)
+		showDeleteDialog.value = false
+		editPaySlip.value = null
 	} catch (error) {
 		console.error('Errore nella cancellazione:', error)
 	}
+}
+
+const openEditDialog = (paySlip: PaySlip) => {
+	editPaySlip.value = paySlip
+	showEditDialog.value = true
+}
+
+const handleEditSaved = () => {
+	showEditDialog.value = false
+	editPaySlip.value = null
+	// Ricarica la pagina per mostrare i dati aggiornati
+	router.reload()
 }
 
 const viewSalary = (salaryId: number) => {
@@ -272,7 +295,15 @@ const viewSalary = (salaryId: number) => {
 									</DropdownMenuItem>
 
 									<DropdownMenuItem
-										@click="confirmDelete(paySlip.id)"
+										v-if="paySlip.processed"
+										@click="openEditDialog(paySlip)"
+									>
+										<Edit class="mr-2 h-4 w-4" />
+										Modifica Dati
+									</DropdownMenuItem>
+
+									<DropdownMenuItem
+										@click="confirmDelete(paySlip)"
 										class="text-red-600"
 									>
 										<Trash2 class="mr-2 h-4 w-4" />
@@ -288,24 +319,18 @@ const viewSalary = (salaryId: number) => {
 	</Card>
 
 	<!-- Delete Confirmation Dialog -->
-	<AlertDialog :open="deletePaySlipId !== null" @update:open="deletePaySlipId = null">
-		<AlertDialogContent>
-			<AlertDialogHeader>
-				<AlertDialogTitle>Conferma Eliminazione</AlertDialogTitle>
-				<AlertDialogDescription>
-					Sei sicuro di voler eliminare questa busta paga? Questa azione non può essere annullata.
-					Se esiste uno stipendio collegato generato automaticamente, verrà anch'esso eliminato.
-				</AlertDialogDescription>
-			</AlertDialogHeader>
-			<AlertDialogFooter>
-				<AlertDialogCancel>Annulla</AlertDialogCancel>
-				<AlertDialogAction
-					@click="deletePaySlip"
-					class="bg-red-600 hover:bg-red-700"
-				>
-					Elimina
-				</AlertDialogAction>
-			</AlertDialogFooter>
-		</AlertDialogContent>
-	</AlertDialog>
+	<DeletePaySlipDialog
+		:paySlip="editPaySlip"
+		:open="showDeleteDialog"
+		@update:open="showDeleteDialog = $event"
+		@confirm="deletePaySlip"
+	/>
+
+	<!-- Edit Data Dialog -->
+	<EditPaySlipDataDialog
+		:paySlip="editPaySlip"
+		:open="showEditDialog"
+		@update:open="showEditDialog = $event"
+		@saved="handleEditSaved"
+	/>
 </template>

@@ -23,4 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('pay-slips/{paySlip}', [PaySlipController::class, 'destroy'])
         ->name('pay-slips.destroy');
+
+    Route::patch('pay-slips/{paySlip}/update-data', [PaySlipController::class, 'updateData'])
+        ->name('pay-slips.update-data');
 });
