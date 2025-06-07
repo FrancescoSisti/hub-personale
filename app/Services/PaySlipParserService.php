@@ -133,14 +133,14 @@ final class PaySlipParserService
 
     private function extractBaseSalary(string $text): ?float
     {
-        // Pattern comuni per stipendio base in buste paga italiane
+        // Pattern specifici per buste paga italiane
         $patterns = [
-            '/PAGA\s*BASE[:\s]*(\d+[.,]\d{2})/i',
-            '/stipendio\s*base[:\s]*€?\s*(\d+[.,]\d{2})/i',
-            '/retribuzione\s*base[:\s]*€?\s*(\d+[.,]\d{2})/i',
-            '/paga\s*base[:\s]*€?\s*(\d+[.,]\d{2})/i',
-            '/salario[:\s]*€?\s*(\d+[.,]\d{2})/i',
-            '/\*\*Z00001Retribuzione\s+[\d,\.]+\s+[\d,\.]+\w+\s+(\d+[.,]\d{2})/i',
+            '/PAGA\s*BASE\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
+            '/\*\*Z00001Retribuzione[^€]*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
+            '/stipendio\s*base[:\s]*€?\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
+            '/retribuzione\s*base[:\s]*€?\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
+            '/paga\s*base[:\s]*€?\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
+            '/salario[:\s]*€?\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
         ];
 
         return $this->extractAmountByPatterns($text, $patterns);
@@ -203,10 +203,14 @@ final class PaySlipParserService
     private function extractTaxes(string $text): ?float
     {
         $patterns = [
-            '/irpef[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/tasse[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/imposte[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/ritenute[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
+            '/F03020Ritenute\s*IRPEF\s*(\d{1,4}[.,]\d{2})/i',
+            '/F06020Ritenute\s*IRPEF\s*Tass\.aut\.\s*(\d{1,4}[.,]\d{2})/i',
+            '/IRPEF\s*pagata\s*(\d{1,4}[.,]\d{2})/i',
+            '/F02010IRPEF\s*lorda\s*(\d{1,4}[.,]\d{2})/i',
+            '/irpef[:\s]*€?\s*(\d{1,4}[.,]\d{2})/i',
+            '/tasse[:\s]*€?\s*(\d{1,4}[.,]\d{2})/i',
+            '/imposte[:\s]*€?\s*(\d{1,4}[.,]\d{2})/i',
+            '/ritenute[:\s]*€?\s*(\d{1,4}[.,]\d{2})/i',
         ];
 
         return $this->extractAmountByPatterns($text, $patterns);
@@ -215,9 +219,15 @@ final class PaySlipParserService
     private function extractDeductions(string $text): ?float
     {
         $patterns = [
-            '/contributi[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/detrazioni[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
-            '/trattenute[:\s]*€?\s*(\d+(?:\.\d{2})?)/i',
+            '/\*Z00000Contributo\s*IVS[^€]*(\d{1,4}[.,]\d{2})/i',
+            '/\*Z00055FIS[^€]*(\d{1,4}[.,]\d{2})/i',
+            '/\*Z00087Contributo\s*CIGS[^€]*(\d{1,4}[.,]\d{2})/i',
+            '/001853Contributo\s*Ente[^€]*(\d{1,4}[.,]\d{2})/i',
+            '/\*Z31000Contributo\s*Fondo[^€]*(\d{1,4}[.,]\d{2})/i',
+            '/TOTALEsTRATTENUTE\s*(\d{1,4}[.,]\d{2})/i',
+            '/contributi[:\s]*€?\s*(\d{1,4}[.,]\d{2})/i',
+            '/detrazioni[:\s]*€?\s*(\d{1,4}[.,]\d{2})/i',
+            '/trattenute[:\s]*€?\s*(\d{1,4}[.,]\d{2})/i',
         ];
 
         return $this->extractAmountByPatterns($text, $patterns);
@@ -226,20 +236,20 @@ final class PaySlipParserService
     private function extractTotals(string $text): array
     {
         $grossPatterns = [
-            '/totale\s*lordo[:\s]*€?\s*(\d+[.,]\d{2})/i',
-            '/TOTALEsCOMPETENZE[:\s]*(\d+[.,]\d{2})/i',
-            '/imponibile[:\s]*€?\s*(\d+[.,]\d{2})/i',
-            '/lordo[:\s]*€?\s*(\d+[.,]\d{2})/i',
-            '/COMPETENZE[^€]*(\d+[.,]\d{2})/i',
+            '/TOTALEsCOMPETENZE\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
+            '/(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})\s*TOTALEsCOMPETENZE/i',
+            '/totale\s*lordo[:\s]*€?\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
+            '/imponibile[:\s]*€?\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
+            '/lordo[:\s]*€?\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
         ];
 
         $netPatterns = [
-            '/(\d+[.,]\d{2})€\s*$/m',
-            '/totale\s*netto[:\s]*€?\s*(\d+[.,]\d{2})/i',
-            '/TOTALEsNETTOsDELsMESE[:\s]*(\d+[.,]\d{2})/i',
-            '/netto\s*in\s*busta[:\s]*€?\s*(\d+[.,]\d{2})/i',
-            '/da\s*pagare[:\s]*€?\s*(\d+[.,]\d{2})/i',
-            '/netto[:\s]*€?\s*(\d+[.,]\d{2})/i',
+            '/(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})€\s*$/m',
+            '/TOTALEsNETTOsDELsMESE\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
+            '/(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})€\s*REVOLUT/i',
+            '/totale\s*netto[:\s]*€?\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
+            '/netto\s*in\s*busta[:\s]*€?\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
+            '/da\s*pagare[:\s]*€?\s*(\d{1,3}\.\d{3},\d{2}|\d{1,4}[.,]\d{2})/i',
         ];
 
         return [
@@ -252,13 +262,21 @@ final class PaySlipParserService
     {
         foreach ($patterns as $pattern) {
             if (preg_match($pattern, $text, $matches)) {
-                // Gestisce sia il formato 1.234,56 che 1234.56
-                $amount = str_replace(',', '.', $matches[1]);
-                // Se ci sono più di 3 cifre prima del punto, è un separatore delle migliaia
-                if (preg_match('/(\d{1,3})\.(\d{3})\.(\d{2})/', $amount)) {
+                $amount = $matches[1];
+
+                // Gestisce il formato italiano 1.653,69 (punto per migliaia, virgola per decimali)
+                if (preg_match('/^(\d{1,3})\.(\d{3}),(\d{2})$/', $amount)) {
+                    // Formato: 1.653,69 -> 1653.69
                     $amount = str_replace('.', '', $amount);
-                    $amount = substr($amount, 0, -2) . '.' . substr($amount, -2);
+                    $amount = str_replace(',', '.', $amount);
+                } elseif (preg_match('/^(\d+),(\d{2})$/', $amount)) {
+                    // Formato: 532,54 -> 532.54
+                    $amount = str_replace(',', '.', $amount);
+                } elseif (preg_match('/^(\d+)\.(\d{2})$/', $amount)) {
+                    // Formato: 1653.69 (già corretto)
+                    // Non fare nulla
                 }
+
                 return (float) $amount;
             }
         }
