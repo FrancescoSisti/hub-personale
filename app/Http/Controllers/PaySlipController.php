@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePaySlipRequest;
 use App\Models\PaySlip;
 use App\Services\PaySlipParserService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,43 +35,51 @@ final class PaySlipController extends Controller
         ]);
     }
 
-    public function upload(Request $request): JsonResponse
+    public function upload(StorePaySlipRequest $request): JsonResponse
     {
-        $request->validate([
-            'file' => [
-                'required',
-                'file',
-                'mimes:pdf',
-                'max:10240', // 10MB
-            ],
-        ], [
-            'file.required' => 'Seleziona un file da caricare.',
-            'file.mimes' => 'Il file deve essere in formato PDF.',
-            'file.max' => 'Il file non può essere più grande di 10MB.',
-        ]);
+        try {
+            $user = $request->user();
+            $file = $request->file('file');
 
-        $user = $request->user();
-        $file = $request->file('file');
+            Log::info('Inizio upload busta paga', [
+                'user_id' => $user->id,
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+            ]);
 
-        // Genera un nome file unico
-        $fileName = time() . '_' . $file->getClientOriginalName();
-        $filePath = $file->storeAs('pay-slips', $fileName, 'public');
+            // Genera un nome file unico
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('pay-slips', $fileName, 'public');
 
-        // Crea il record PaySlip
-        $paySlip = PaySlip::create([
-            'user_id' => $user->id,
-            'file_path' => $filePath,
-            'file_name' => $file->getClientOriginalName(),
-            'file_size' => $file->getSize(),
-        ]);
+            Log::info('File salvato', ['file_path' => $filePath]);
 
-        // Avvia il processing in background
-        $this->processPaySlip($paySlip);
+            // Crea il record PaySlip
+            $paySlip = PaySlip::create([
+                'user_id' => $user->id,
+                'file_path' => $filePath,
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+            ]);
 
-        return response()->json([
-            'message' => 'Busta paga caricata con successo. Elaborazione in corso...',
-            'paySlip' => $paySlip,
-        ], 201);
+            Log::info('PaySlip creato', ['pay_slip_id' => $paySlip->id]);
+
+            // Avvia il processing in background
+            $this->processPaySlip($paySlip);
+
+            return response()->json([
+                'message' => 'Busta paga caricata con successo. Elaborazione in corso...',
+                'paySlip' => $paySlip,
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Errore upload busta paga', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Errore durante l\'upload: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function process(PaySlip $paySlip): JsonResponse
@@ -106,25 +117,34 @@ final class PaySlipController extends Controller
         ]);
     }
 
-    public function destroy(PaySlip $paySlip): JsonResponse
+    public function destroy(PaySlip $paySlip): RedirectResponse
     {
         $this->authorize('delete', $paySlip);
 
-        // Elimina il file fisico
-        if (Storage::disk('public')->exists($paySlip->file_path)) {
-            Storage::disk('public')->delete($paySlip->file_path);
+        try {
+            // Elimina il file fisico
+            if (Storage::disk('public')->exists($paySlip->file_path)) {
+                Storage::disk('public')->delete($paySlip->file_path);
+            }
+
+            // Se esiste un salary collegato e auto-generato, chiedi conferma o elimina
+            if ($paySlip->salary && $paySlip->salary->auto_generated) {
+                $paySlip->salary->delete();
+            }
+
+            $paySlip->delete();
+
+            Log::info('PaySlip eliminato', ['pay_slip_id' => $paySlip->id]);
+
+            return redirect()->back()->with('message', 'Busta paga eliminata con successo.');
+        } catch (\Exception $e) {
+            Log::error('Errore eliminazione PaySlip', [
+                'pay_slip_id' => $paySlip->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->withErrors('Errore durante l\'eliminazione della busta paga.');
         }
-
-        // Se esiste un salary collegato e auto-generato, chiedi conferma o elimina
-        if ($paySlip->salary && $paySlip->salary->auto_generated) {
-            $paySlip->salary->delete();
-        }
-
-        $paySlip->delete();
-
-        return response()->json([
-            'message' => 'Busta paga eliminata con successo.',
-        ]);
     }
 
     public function download(PaySlip $paySlip)

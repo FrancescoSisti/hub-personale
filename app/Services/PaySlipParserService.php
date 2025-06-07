@@ -35,10 +35,22 @@ final class PaySlipParserService
             $pdf = $this->pdfParser->parseFile($filePath);
             $text = $pdf->getText();
 
+            // Log del testo estratto per debugging
+            Log::info('Testo estratto dal PDF', [
+                'pay_slip_id' => $paySlip->id,
+                'text_length' => strlen($text),
+                'text_preview' => substr($text, 0, 500),
+            ]);
+
             $extractedData = $this->extractDataFromText($text);
 
+            Log::info('Dati estratti dal parsing', [
+                'pay_slip_id' => $paySlip->id,
+                'extracted_data' => $extractedData,
+            ]);
+
             if (empty($extractedData)) {
-                $paySlip->markAsError('Impossibile estrarre dati dal PDF');
+                $paySlip->markAsError('Impossibile estrarre dati dal PDF. Formato non riconosciuto o PDF scansionato.');
                 return false;
             }
 
@@ -98,6 +110,13 @@ final class PaySlipParserService
         $totals = $this->extractTotals($text);
         $data['gross_salary'] = $totals['gross'];
         $data['net_salary'] = $totals['net'];
+
+        // Se non troviamo nulla, proviamo con pattern più generici
+        if (empty(array_filter($data, function ($value) {
+            return $value !== null && $value !== 0;
+        }))) {
+            $data = $this->extractGenericAmounts($text);
+        }
 
         return array_filter($data, function ($value) {
             return $value !== null && $value !== 0;
@@ -318,5 +337,47 @@ final class PaySlipParserService
             User::find($paySlip->user_id),
             $salaryData
         );
+    }
+
+    private function extractGenericAmounts(string $text): array
+    {
+        // Pattern generici per trovare almeno alcuni valori monetari
+        $amounts = [];
+
+        // Cerca tutti i numeri con formato euro
+        preg_match_all('/€\s*(\d{1,5}(?:[.,]\d{2})?)/i', $text, $euroMatches);
+
+        // Se non troviamo euro, cerca numeri con formato monetario
+        if (empty($euroMatches[1])) {
+            preg_match_all('/\b(\d{1,5}[.,]\d{2})\b/', $text, $numberMatches);
+            $matches = $numberMatches;
+        } else {
+            $matches = $euroMatches;
+        }
+
+        if (!empty($matches[1])) {
+            $values = array_map(function ($amount) {
+                return (float) str_replace(',', '.', $amount);
+            }, $matches[1]);
+
+            // Ordina i valori per importanza (dal più grande al più piccolo)
+            rsort($values);
+
+            // Il valore più alto potrebbe essere lordo, il secondo netto
+            if (count($values) >= 2) {
+                return [
+                    'gross_salary' => $values[0],
+                    'net_salary' => $values[1],
+                    'base_salary' => $values[1], // Usa il netto come base se non troviamo altro
+                ];
+            } elseif (count($values) >= 1) {
+                return [
+                    'net_salary' => $values[0],
+                    'base_salary' => $values[0],
+                ];
+            }
+        }
+
+        return [];
     }
 }
