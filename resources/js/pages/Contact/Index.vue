@@ -1,14 +1,17 @@
 <template>
-    <AppLayout>
-        <template #header>
+    <Head title="Gestione Contatti" />
+
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div class="flex h-full flex-1 flex-col gap-6 p-6">
+            <!-- Header -->
             <div class="flex items-center justify-between">
                 <div>
-                    <Heading title="Contatti" />
-                    <p class="text-muted-foreground mt-1">
+                    <h1 class="text-3xl font-bold tracking-tight">Gestione Contatti</h1>
+                    <p class="text-muted-foreground">
                         Gestisci i messaggi ricevuti dai form di contatto esterni
                     </p>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex items-center gap-4">
                     <Button 
                         v-if="selectedContacts.length > 0"
                         variant="outline"
@@ -27,262 +30,306 @@
                         variant="outline"
                         @click="exportContacts"
                     >
+                        <Download class="mr-2 h-4 w-4" />
                         Esporta CSV
                     </Button>
                 </div>
             </div>
-        </template>
 
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <!-- Statistics Cards -->
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle class="text-sm font-medium">Totali</CardTitle>
+                        <Mail class="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div class="text-2xl font-bold">{{ stats.total }}</div>
+                        <p class="text-xs text-muted-foreground">
+                            Messaggi ricevuti
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle class="text-sm font-medium">Non letti</CardTitle>
+                        <MailOpen class="h-4 w-4 text-orange-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div class="text-2xl font-bold text-orange-600">{{ stats.unread }}</div>
+                        <p class="text-xs text-muted-foreground">
+                            Da leggere
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle class="text-sm font-medium">Oggi</CardTitle>
+                        <Calendar class="h-4 w-4 text-green-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div class="text-2xl font-bold text-green-600">{{ stats.today }}</div>
+                        <p class="text-xs text-muted-foreground">
+                            Ricevuti oggi
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle class="text-sm font-medium">Questa settimana</CardTitle>
+                        <CalendarDays class="h-4 w-4 text-purple-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div class="text-2xl font-bold text-purple-600">{{ stats.this_week }}</div>
+                        <p class="text-xs text-muted-foreground">
+                            Ultimi 7 giorni
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <!-- Filters -->
             <Card>
-                <CardContent class="p-6">
-                    <div class="flex items-center">
-                        <Icon name="mail" class="h-5 w-5 text-blue-500" />
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-muted-foreground">Totali</p>
-                            <p class="text-2xl font-bold">{{ stats.total }}</p>
+                <CardHeader>
+                    <CardTitle>Filtri</CardTitle>
+                    <CardDescription>
+                        Filtra e cerca tra i contatti ricevuti
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <Label for="search">Ricerca</Label>
+                            <Input
+                                id="search"
+                                v-model="filters.search"
+                                placeholder="Nome, email, messaggio..."
+                                @input="debouncedSearch"
+                            />
+                        </div>
+                        <div>
+                            <Label for="status">Stato</Label>
+                            <Select v-model="filters.status" @update:model-value="applyFilters">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Tutti" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Tutti</SelectItem>
+                                    <SelectItem value="unread">Non letti</SelectItem>
+                                    <SelectItem value="read">Letti</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label for="origin">Origine</Label>
+                            <Select v-model="filters.origin" @update:model-value="applyFilters">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Tutte" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Tutte</SelectItem>
+                                    <SelectItem v-for="origin in origins" :key="origin.origin" :value="origin.origin">
+                                        {{ origin.origin }} ({{ origin.count }})
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label for="date_from">Data da</Label>
+                            <Input
+                                id="date_from"
+                                v-model="filters.date_from"
+                                type="date"
+                                @change="applyFilters"
+                            />
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                        <Button variant="outline" @click="clearFilters">
+                            <X class="mr-2 h-4 w-4" />
+                            Cancella filtri
+                        </Button>
+                        <div class="text-sm text-muted-foreground">
+                            {{ contacts.total }} contatti trovati
                         </div>
                     </div>
                 </CardContent>
             </Card>
-            <Card>
-                <CardContent class="p-6">
-                    <div class="flex items-center">
-                        <Icon name="mail-open" class="h-5 w-5 text-orange-500" />
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-muted-foreground">Non letti</p>
-                            <p class="text-2xl font-bold">{{ stats.unread }}</p>
-                        </div>
-                    </div>
+
+            <!-- Empty State -->
+            <Card v-if="contacts.data.length === 0">
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2">
+                        <Mail class="h-5 w-5" />
+                        Nessun contatto trovato
+                    </CardTitle>
+                    <CardDescription>
+                        Non ci sono contatti che corrispondono ai filtri selezionati
+                    </CardDescription>
+                </CardHeader>
+                <CardContent class="text-center py-6">
+                    <p class="text-muted-foreground mb-4">
+                        I contatti ricevuti tramite i form esterni appariranno qui
+                    </p>
+                    <Button variant="outline" @click="clearFilters">
+                        Mostra tutti i contatti
+                    </Button>
                 </CardContent>
             </Card>
-            <Card>
-                <CardContent class="p-6">
-                    <div class="flex items-center">
-                        <Icon name="calendar" class="h-5 w-5 text-green-500" />
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-muted-foreground">Oggi</p>
-                            <p class="text-2xl font-bold">{{ stats.today }}</p>
-                        </div>
+
+            <!-- Contacts Table -->
+            <Card v-else>
+                <CardContent class="p-0">
+                    <div class="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead class="w-12">
+                                        <Checkbox 
+                                            :checked="allSelected"
+                                            @update:checked="toggleSelectAll"
+                                        />
+                                    </TableHead>
+                                    <TableHead>
+                                        <Button variant="ghost" @click="sortBy('read')">
+                                            Stato
+                                            <ArrowUpDown class="ml-1 h-4 w-4" />
+                                        </Button>
+                                    </TableHead>
+                                    <TableHead>
+                                        <Button variant="ghost" @click="sortBy('name')">
+                                            Nome
+                                            <ArrowUpDown class="ml-1 h-4 w-4" />
+                                        </Button>
+                                    </TableHead>
+                                    <TableHead>Email</TableHead>
+                                    <TableHead>Oggetto</TableHead>
+                                    <TableHead>Azienda</TableHead>
+                                    <TableHead>
+                                        <Button variant="ghost" @click="sortBy('created_at')">
+                                            Data
+                                            <ArrowUpDown class="ml-1 h-4 w-4" />
+                                        </Button>
+                                    </TableHead>
+                                    <TableHead class="w-24">Azioni</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                <TableRow 
+                                    v-for="contact in contacts.data" 
+                                    :key="contact.id"
+                                    :class="!contact.read ? 'bg-blue-50 dark:bg-blue-950/20' : ''"
+                                >
+                                    <TableCell>
+                                        <Checkbox 
+                                            :checked="selectedContacts.includes(contact.id)"
+                                            @update:checked="toggleContact(contact.id)"
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge :variant="contact.read ? 'secondary' : 'default'">
+                                            {{ contact.read ? 'Letto' : 'Non letto' }}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell class="font-medium">
+                                        <Link :href="route('contacts.show', contact.id)" class="text-blue-600 hover:underline">
+                                            {{ contact.name }}
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell>{{ contact.email }}</TableCell>
+                                    <TableCell>
+                                        <span class="truncate max-w-40 block">
+                                            {{ contact.subject || 'Nessun oggetto' }}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell>{{ contact.company || '-' }}</TableCell>
+                                    <TableCell>
+                                        <div class="text-sm">
+                                            {{ formatDate(contact.created_at) }}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div class="flex gap-1">
+                                            <Button 
+                                                size="sm" 
+                                                variant="ghost"
+                                                @click="toggleReadStatus(contact)"
+                                            >
+                                                <MailOpen v-if="!contact.read" class="h-4 w-4" />
+                                                <Mail v-else class="h-4 w-4" />
+                                            </Button>
+                                            <Button 
+                                                size="sm" 
+                                                variant="ghost"
+                                                @click="deleteContact(contact)"
+                                            >
+                                                <Trash class="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
                     </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardContent class="p-6">
-                    <div class="flex items-center">
-                        <Icon name="calendar-days" class="h-5 w-5 text-purple-500" />
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-muted-foreground">Questa settimana</p>
-                            <p class="text-2xl font-bold">{{ stats.this_week }}</p>
+                    
+                    <!-- Pagination -->
+                    <div v-if="contacts.last_page > 1" class="border-t p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="text-sm text-muted-foreground">
+                                Mostrando {{ contacts.from }} - {{ contacts.to }} di {{ contacts.total }} risultati
+                            </div>
+                            <div class="flex gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    :disabled="!contacts.prev_page_url"
+                                    @click="goToPage(contacts.current_page - 1)"
+                                >
+                                    Precedente
+                                </Button>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    :disabled="!contacts.next_page_url"
+                                    @click="goToPage(contacts.current_page + 1)"
+                                >
+                                    Successiva
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
             </Card>
         </div>
-
-        <!-- Filters -->
-        <Card class="mb-6">
-            <CardContent class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <Label for="search">Ricerca</Label>
-                        <Input
-                            id="search"
-                            v-model="filters.search"
-                            placeholder="Nome, email, messaggio..."
-                            @input="debouncedSearch"
-                        />
-                    </div>
-                    <div>
-                        <Label for="status">Stato</Label>
-                        <Select v-model="filters.status" @update:model-value="applyFilters">
-                            <SelectTrigger>
-                                <SelectValue placeholder="Tutti" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="">Tutti</SelectItem>
-                                <SelectItem value="unread">Non letti</SelectItem>
-                                <SelectItem value="read">Letti</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div>
-                        <Label for="origin">Origine</Label>
-                        <Select v-model="filters.origin" @update:model-value="applyFilters">
-                            <SelectTrigger>
-                                <SelectValue placeholder="Tutte" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="">Tutte</SelectItem>
-                                <SelectItem v-for="origin in origins" :key="origin.origin" :value="origin.origin">
-                                    {{ origin.origin }} ({{ origin.count }})
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div>
-                        <Label for="date_from">Data da</Label>
-                        <Input
-                            id="date_from"
-                            v-model="filters.date_from"
-                            type="date"
-                            @change="applyFilters"
-                        />
-                    </div>
-                </div>
-                <div class="flex justify-between items-center mt-4">
-                    <Button variant="outline" @click="clearFilters">
-                        Cancella filtri
-                    </Button>
-                    <div class="text-sm text-muted-foreground">
-                        {{ contacts.total }} contatti trovati
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-
-        <!-- Contacts Table -->
-        <Card>
-            <CardContent class="p-0">
-                <div class="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead class="w-12">
-                                    <Checkbox 
-                                        :checked="allSelected"
-                                        @update:checked="toggleSelectAll"
-                                    />
-                                </TableHead>
-                                <TableHead>
-                                    <Button variant="ghost" @click="sortBy('read')">
-                                        Stato
-                                        <Icon name="arrow-up-down" class="ml-1 h-4 w-4" />
-                                    </Button>
-                                </TableHead>
-                                <TableHead>
-                                    <Button variant="ghost" @click="sortBy('name')">
-                                        Nome
-                                        <Icon name="arrow-up-down" class="ml-1 h-4 w-4" />
-                                    </Button>
-                                </TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Oggetto</TableHead>
-                                <TableHead>Azienda</TableHead>
-                                <TableHead>
-                                    <Button variant="ghost" @click="sortBy('created_at')">
-                                        Data
-                                        <Icon name="arrow-up-down" class="ml-1 h-4 w-4" />
-                                    </Button>
-                                </TableHead>
-                                <TableHead class="w-24">Azioni</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            <TableRow 
-                                v-for="contact in contacts.data" 
-                                :key="contact.id"
-                                :class="!contact.read ? 'bg-blue-50' : ''"
-                            >
-                                <TableCell>
-                                    <Checkbox 
-                                        :checked="selectedContacts.includes(contact.id)"
-                                        @update:checked="toggleContact(contact.id)"
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <Badge :variant="contact.read ? 'secondary' : 'default'">
-                                        {{ contact.read ? 'Letto' : 'Non letto' }}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell class="font-medium">
-                                    <TextLink :href="route('contacts.show', contact.id)">
-                                        {{ contact.name }}
-                                    </TextLink>
-                                </TableCell>
-                                <TableCell>{{ contact.email }}</TableCell>
-                                <TableCell>
-                                    <span class="truncate max-w-40 block">
-                                        {{ contact.subject || 'Nessun oggetto' }}
-                                    </span>
-                                </TableCell>
-                                <TableCell>{{ contact.company || '-' }}</TableCell>
-                                <TableCell>
-                                    <div class="text-sm">
-                                        {{ formatDate(contact.created_at) }}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <div class="flex gap-1">
-                                        <Button 
-                                            size="sm" 
-                                            variant="ghost"
-                                            @click="toggleReadStatus(contact)"
-                                        >
-                                            <Icon :name="contact.read ? 'mail' : 'mail-open'" class="h-4 w-4" />
-                                        </Button>
-                                        <Button 
-                                            size="sm" 
-                                            variant="ghost"
-                                            @click="deleteContact(contact)"
-                                        >
-                                            <Icon name="trash" class="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                </div>
-                
-                <!-- Pagination -->
-                <div v-if="contacts.last_page > 1" class="border-t p-4">
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-muted-foreground">
-                            Mostrando {{ contacts.from }} - {{ contacts.to }} di {{ contacts.total }} risultati
-                        </div>
-                        <div class="flex gap-2">
-                            <Button 
-                                variant="outline" 
-                                size="sm"
-                                :disabled="!contacts.prev_page_url"
-                                @click="goToPage(contacts.current_page - 1)"
-                            >
-                                Precedente
-                            </Button>
-                            <Button 
-                                variant="outline" 
-                                size="sm"
-                                :disabled="!contacts.next_page_url"
-                                @click="goToPage(contacts.current_page + 1)"
-                            >
-                                Successiva
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
     </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { router } from '@inertiajs/vue3'
-import { usePage } from '@inertiajs/vue3'
+import { ref, computed, reactive } from 'vue'
+import { Head, Link, router } from '@inertiajs/vue3'
+import { type BreadcrumbItem } from '@/types'
 import AppLayout from '@/layouts/AppLayout.vue'
-import Heading from '@/components/Heading.vue'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import Icon from '@/components/Icon.vue'
-import TextLink from '@/components/TextLink.vue'
+import { 
+    Mail, 
+    MailOpen, 
+    Calendar, 
+    CalendarDays, 
+    Download, 
+    ArrowUpDown, 
+    Trash,
+    X
+} from 'lucide-vue-next'
 
 interface Contact {
     id: number
@@ -330,11 +377,17 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Contatti', href: '/contacts' },
+]
+
 const selectedContacts = ref<number[]>([])
-const filters = ref({
-    status: props.filters.status || '',
+
+const filters = reactive({
+    status: props.filters.status === '' ? 'all' : props.filters.status || 'all',
     search: props.filters.search || '',
-    origin: props.filters.origin || '',
+    origin: props.filters.origin === '' ? 'all' : props.filters.origin || 'all',
     date_from: props.filters.date_from || '',
     date_to: props.filters.date_to || '',
     sort_by: props.filters.sort_by || 'created_at',
@@ -364,31 +417,37 @@ const debouncedSearch = debounce(() => {
 }, 500)
 
 function applyFilters() {
-    router.get(route('contacts.index'), filters.value, {
+    const filterParams = {
+        ...filters,
+        status: filters.status === 'all' ? '' : filters.status,
+        origin: filters.origin === 'all' ? '' : filters.origin
+    }
+
+    router.get(route('contacts.index'), filterParams, {
         preserveState: true,
         preserveScroll: true
     })
 }
 
 function clearFilters() {
-    filters.value = {
-        status: '',
+    Object.assign(filters, {
+        status: 'all',
         search: '',
-        origin: '',
+        origin: 'all',
         date_from: '',
         date_to: '',
         sort_by: 'created_at',
         sort_order: 'desc'
-    }
+    })
     applyFilters()
 }
 
 function sortBy(column: string) {
-    if (filters.value.sort_by === column) {
-        filters.value.sort_order = filters.value.sort_order === 'asc' ? 'desc' : 'asc'
+    if (filters.sort_by === column) {
+        filters.sort_order = filters.sort_order === 'asc' ? 'desc' : 'asc'
     } else {
-        filters.value.sort_by = column
-        filters.value.sort_order = 'asc'
+        filters.sort_by = column
+        filters.sort_order = 'asc'
     }
     applyFilters()
 }
@@ -451,11 +510,23 @@ function deleteSelected() {
 }
 
 function exportContacts() {
-    window.open(route('contacts.export') + '?' + new URLSearchParams(filters.value).toString())
+    const filterParams = {
+        ...filters,
+        status: filters.status === 'all' ? '' : filters.status,
+        origin: filters.origin === 'all' ? '' : filters.origin
+    }
+    window.open(route('contacts.export') + '?' + new URLSearchParams(filterParams).toString())
 }
 
 function goToPage(page: number) {
-    router.get(route('contacts.index'), { ...filters.value, page }, {
+    const filterParams = {
+        ...filters,
+        status: filters.status === 'all' ? '' : filters.status,
+        origin: filters.origin === 'all' ? '' : filters.origin,
+        page: page.toString()
+    }
+    
+    router.get(route('contacts.index'), filterParams, {
         preserveState: true,
         preserveScroll: true
     })

@@ -4,11 +4,15 @@ import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid, Euro, FileText, Mail } from 'lucide-vue-next';
+import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
-const mainNavItems: NavItem[] = [
+const page = usePage();
+const unreadContactsCount = computed(() => (page.props.contacts as any)?.unread_count || 0);
+
+const mainNavItems = computed<NavItem[]>(() => [
     {
         title: 'Dashboard',
         href: '/dashboard',
@@ -28,8 +32,9 @@ const mainNavItems: NavItem[] = [
         title: 'Contatti',
         href: '/contacts',
         icon: Mail,
+        badge: unreadContactsCount.value > 0 ? unreadContactsCount.value : undefined,
     },
-];
+]);
 
 const footerNavItems: NavItem[] = [
     {
