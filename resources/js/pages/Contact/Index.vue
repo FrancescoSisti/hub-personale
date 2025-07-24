@@ -3,6 +3,7 @@
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
+
             <!-- Header -->
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -423,7 +424,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, watch } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import { type BreadcrumbItem } from '@/types'
 import AppLayout from '@/layouts/AppLayout.vue'
@@ -509,9 +510,36 @@ const filters = reactive({
     sort_order: props.filters.sort_order || 'desc'
 })
 
+// Watch for contacts data changes and reset selection
+watch(() => props.contacts.data, () => {
+    // Reset selection when contacts data changes
+    selectedContacts.value = []
+}, { deep: true })
+
+// Watch for page changes and reset selection
+watch(() => props.contacts.current_page, () => {
+    selectedContacts.value = []
+})
+
 const allSelected = computed(() => {
     return props.contacts.data.length > 0 && 
            selectedContacts.value.length === props.contacts.data.length
+})
+
+// Computed property to check if some contacts are selected (for indeterminate state)
+const someSelected = computed(() => {
+    return selectedContacts.value.length > 0 && selectedContacts.value.length < props.contacts.data.length
+})
+
+// Debug computed to track selection state
+const selectionInfo = computed(() => {
+    return {
+        total: props.contacts.data.length,
+        selected: selectedContacts.value.length,
+        selectedIds: selectedContacts.value,
+        allSelected: allSelected.value,
+        someSelected: someSelected.value
+    }
 })
 
 // Simple debounce function
@@ -532,6 +560,9 @@ const debouncedSearch = debounce(() => {
 }, 500)
 
 function applyFilters() {
+    // Reset selection when applying filters
+    selectedContacts.value = []
+    
     const filterParams = {
         ...filters,
         status: filters.status === 'all' ? '' : filters.status,
@@ -545,6 +576,9 @@ function applyFilters() {
 }
 
 function clearFilters() {
+    // Reset selection when clearing filters
+    selectedContacts.value = []
+    
     Object.assign(filters, {
         status: 'all',
         search: '',
@@ -571,44 +605,79 @@ function toggleSelectAll() {
     if (allSelected.value) {
         selectedContacts.value = []
     } else {
+        // Create a new array with all contact IDs
         selectedContacts.value = props.contacts.data.map(contact => contact.id)
     }
 }
 
 function toggleContact(contactId: number) {
-    const index = selectedContacts.value.indexOf(contactId)
+    // Create a new array to ensure reactivity
+    const currentSelection = [...selectedContacts.value]
+    const index = currentSelection.indexOf(contactId)
+    
     if (index > -1) {
-        selectedContacts.value.splice(index, 1)
+        // Remove contact from selection
+        currentSelection.splice(index, 1)
     } else {
-        selectedContacts.value.push(contactId)
+        // Add contact to selection
+        currentSelection.push(contactId)
     }
+    
+    selectedContacts.value = currentSelection
 }
 
 function toggleReadStatus(contact: Contact) {
     router.patch(route('contacts.toggle-read', contact.id), {}, {
-        preserveState: true
+        preserveState: true,
+        onSuccess: () => {
+            // Remove contact from selection if it was selected
+            const index = selectedContacts.value.indexOf(contact.id)
+            if (index > -1) {
+                selectedContacts.value.splice(index, 1)
+            }
+        }
     })
 }
 
 function deleteContact(contact: Contact) {
     if (confirm('Sei sicuro di voler eliminare questo contatto?')) {
-        router.delete(route('contacts.destroy', contact.id))
+        router.delete(route('contacts.destroy', contact.id), {
+            onSuccess: () => {
+                // Remove contact from selection if it was selected
+                const index = selectedContacts.value.indexOf(contact.id)
+                if (index > -1) {
+                    selectedContacts.value.splice(index, 1)
+                }
+            }
+        })
     }
 }
 
 function markSelectedAsRead() {
+    if (selectedContacts.value.length === 0) return
+    
     router.post(route('contacts.mark-multiple-read'), {
         contact_ids: selectedContacts.value
     }, {
-        preserveState: true
+        preserveState: true,
+        onSuccess: () => {
+            // Reset selection after successful operation
+            selectedContacts.value = []
+        }
     })
 }
 
 function deleteSelected() {
+    if (selectedContacts.value.length === 0) return
+    
     if (confirm(`Sei sicuro di voler eliminare ${selectedContacts.value.length} contatti?`)) {
         router.delete(route('contacts.destroy-multiple'), {
             data: { contact_ids: selectedContacts.value },
-            preserveState: true
+            preserveState: true,
+            onSuccess: () => {
+                // Reset selection after successful operation
+                selectedContacts.value = []
+            }
         })
     }
 }
@@ -623,6 +692,9 @@ function exportContacts() {
 }
 
 function goToPage(page: number) {
+    // Reset selection when changing page
+    selectedContacts.value = []
+    
     const filterParams = {
         ...filters,
         status: filters.status === 'all' ? '' : filters.status,

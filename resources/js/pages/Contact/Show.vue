@@ -341,12 +341,12 @@ function composeEmail() {
     
     const body = `Ciao ${props.contact.name},
 
-Grazie per averci contattato tramite il nostro sito web.
+Grazie per avermi contattato tramite il mio portfolio.
 
-Abbiamo ricevuto il tuo messaggio e ti risponderemo al più presto.
+Ho ricevuto il tuo messaggio e ti risponderò al più presto.
 
 Cordiali saluti,
-Il nostro team`
+Francesco`
     
     const mailtoUrl = `mailto:${props.contact.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
     window.open(mailtoUrl)
