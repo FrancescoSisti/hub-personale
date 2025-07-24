@@ -18,7 +18,8 @@ class ContactController extends Controller
     public function store(StoreContactRequest $request): JsonResponse
     {
         // Rate limiting per IP
-        $key = 'contact-form:' . $request->ip();
+        $clientIp = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $key = 'contact-form:' . $clientIp;
         
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
@@ -33,12 +34,12 @@ class ContactController extends Controller
         try {
             // Create contact record
             $contactData = $request->validated();
-            $contactData['ip_address'] = $request->ip();
-            $contactData['user_agent'] = $request->userAgent();
+            $contactData['ip_address'] = $clientIp;
+            $contactData['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? '';
             
             // Set origin from referer if not provided
             if (empty($contactData['origin'])) {
-                $contactData['origin'] = $request->header('referer', 'unknown');
+                $contactData['origin'] = $_SERVER['HTTP_REFERER'] ?? 'unknown';
             }
 
             $contact = Contact::create($contactData);
@@ -60,7 +61,7 @@ class ContactController extends Controller
         } catch (\Exception $e) {
             Log::error('Error creating contact', [
                 'error' => $e->getMessage(),
-                'request_data' => $request->except(['password', 'password_confirmation']),
+                'ip' => $clientIp,
             ]);
 
             return response()->json([

@@ -99,22 +99,18 @@ class ContactManagementController extends Controller
     /**
      * Mark contact as read/unread
      */
-    public function toggleRead(Contact $contact): JsonResponse
+    public function toggleRead(Contact $contact)
     {
         $newStatus = !$contact->read;
         $contact->update(['read' => $newStatus]);
         
-        return response()->json([
-            'success' => true,
-            'message' => $newStatus ? 'Contatto marcato come letto' : 'Contatto marcato come non letto',
-            'read' => $newStatus,
-        ]);
+        return back()->with('success', $newStatus ? 'Contatto marcato come letto' : 'Contatto marcato come non letto');
     }
     
     /**
      * Mark multiple contacts as read
      */
-    public function markMultipleAsRead(Request $request): JsonResponse
+    public function markMultipleAsRead(Request $request)
     {
         $request->validate([
             'contact_ids' => 'required|array',
@@ -124,30 +120,29 @@ class ContactManagementController extends Controller
         $updated = Contact::whereIn('id', $request->contact_ids)
             ->update(['read' => true]);
         
-        return response()->json([
-            'success' => true,
-            'message' => "Marcati {$updated} contatti come letti",
-            'updated_count' => $updated,
-        ]);
+        return back()->with('success', "Marcati {$updated} contatti come letti");
     }
     
     /**
      * Delete contact
      */
-    public function destroy(Contact $contact): JsonResponse
+    public function destroy(Contact $contact)
     {
         $contact->delete();
         
-        return response()->json([
-            'success' => true,
-            'message' => 'Contatto eliminato con successo',
-        ]);
+        // If coming from show page, redirect to index
+        if (str_contains(request()->header('referer', ''), '/contacts/' . $contact->id)) {
+            return redirect()->route('contacts.index')->with('success', 'Contatto eliminato con successo');
+        }
+        
+        // Otherwise, go back to previous page (index with filters)
+        return back()->with('success', 'Contatto eliminato con successo');
     }
     
     /**
      * Delete multiple contacts
      */
-    public function destroyMultiple(Request $request): JsonResponse
+    public function destroyMultiple(Request $request)
     {
         $request->validate([
             'contact_ids' => 'required|array',
@@ -156,11 +151,7 @@ class ContactManagementController extends Controller
         
         $deleted = Contact::whereIn('id', $request->contact_ids)->delete();
         
-        return response()->json([
-            'success' => true,
-            'message' => "Eliminati {$deleted} contatti",
-            'deleted_count' => $deleted,
-        ]);
+        return back()->with('success', "Eliminati {$deleted} contatti");
     }
     
     /**

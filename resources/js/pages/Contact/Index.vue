@@ -586,18 +586,13 @@ function toggleContact(contactId: number) {
 
 function toggleReadStatus(contact: Contact) {
     router.patch(route('contacts.toggle-read', contact.id), {}, {
-        preserveState: true,
-        onSuccess: () => {
-            contact.read = !contact.read
-        }
+        preserveState: true
     })
 }
 
 function deleteContact(contact: Contact) {
     if (confirm('Sei sicuro di voler eliminare questo contatto?')) {
-        router.delete(route('contacts.destroy', contact.id), {
-            preserveState: true
-        })
+        router.delete(route('contacts.destroy', contact.id))
     }
 }
 
@@ -605,10 +600,7 @@ function markSelectedAsRead() {
     router.post(route('contacts.mark-multiple-read'), {
         contact_ids: selectedContacts.value
     }, {
-        preserveState: true,
-        onSuccess: () => {
-            selectedContacts.value = []
-        }
+        preserveState: true
     })
 }
 
@@ -616,10 +608,7 @@ function deleteSelected() {
     if (confirm(`Sei sicuro di voler eliminare ${selectedContacts.value.length} contatti?`)) {
         router.delete(route('contacts.destroy-multiple'), {
             data: { contact_ids: selectedContacts.value },
-            preserveState: true,
-            onSuccess: () => {
-                selectedContacts.value = []
-            }
+            preserveState: true
         })
     }
 }

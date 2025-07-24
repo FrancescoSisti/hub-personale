@@ -2,19 +2,20 @@
     <Head title="Dettaglio Contatto" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6">
+        <div class="flex h-full flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
             <!-- Header -->
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <Button variant="ghost" @click="goBack">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <!-- Back button and title section -->
+                <div class="flex flex-col gap-3">
+                    <Button variant="ghost" @click="goBack" class="self-start">
                         <ArrowLeft class="h-4 w-4 mr-2" />
                         Indietro
                     </Button>
                     <div>
-                        <h1 class="text-3xl font-bold tracking-tight">Contatto da {{ contact.name }}</h1>
-                        <div class="flex items-center gap-2 mt-1">
-                            <Badge :variant="contactState.read ? 'secondary' : 'default'">
-                                {{ contactState.read ? 'Letto' : 'Non letto' }}
+                        <h1 class="text-2xl lg:text-3xl font-bold tracking-tight">Contatto da {{ contact.name }}</h1>
+                        <div class="flex flex-col gap-2 mt-2 sm:flex-row sm:items-center sm:gap-4">
+                            <Badge :variant="contact.read ? 'secondary' : 'default'" class="self-start">
+                                {{ contact.read ? 'Letto' : 'Non letto' }}
                             </Badge>
                             <span class="text-sm text-muted-foreground">
                                 Ricevuto il {{ formatDate(contact.created_at) }}
@@ -22,22 +23,25 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <Button variant="outline" @click="toggleReadStatus">
-                        <MailOpen v-if="!contactState.read" class="h-4 w-4 mr-2" />
+                
+                <!-- Action buttons -->
+                <div class="flex flex-col gap-2 sm:flex-row sm:gap-4 lg:items-center">
+                    <Button variant="outline" @click="toggleReadStatus" size="sm" class="justify-start sm:justify-center">
+                        <MailOpen v-if="!contact.read" class="h-4 w-4 mr-2" />
                         <Mail v-else class="h-4 w-4 mr-2" />
-                        {{ contactState.read ? 'Marca come non letto' : 'Marca come letto' }}
+                        <span class="hidden sm:inline">{{ contact.read ? 'Marca come non letto' : 'Marca come letto' }}</span>
+                        <span class="sm:hidden">{{ contact.read ? 'Non letto' : 'Letto' }}</span>
                     </Button>
-                    <Button variant="destructive" @click="deleteContact">
+                    <Button variant="destructive" @click="deleteContact" size="sm" class="justify-start sm:justify-center">
                         <Trash class="h-4 w-4 mr-2" />
                         Elimina
                     </Button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:gap-6">
                 <!-- Main Content -->
-                <div class="lg:col-span-2 space-y-6">
+                <div class="order-1 lg:order-1 lg:col-span-2 space-y-6">
                     <!-- Message -->
                     <Card>
                         <CardHeader>
@@ -51,7 +55,7 @@
                         </CardHeader>
                         <CardContent>
                             <div class="prose prose-sm max-w-none dark:prose-invert">
-                                <p class="whitespace-pre-wrap text-sm leading-relaxed">{{ contact.message }}</p>
+                                <p class="whitespace-pre-wrap text-sm leading-relaxed break-words">{{ contact.message }}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -72,10 +76,10 @@
                                 <div 
                                     v-for="(value, key) in contact.extra_data" 
                                     :key="key"
-                                    class="flex items-center justify-between py-3 border-b last:border-b-0"
+                                    class="flex flex-col gap-2 py-3 border-b last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
                                 >
-                                    <Label class="font-medium capitalize">{{ formatFieldName(key) }}</Label>
-                                    <span class="text-sm text-muted-foreground">{{ value }}</span>
+                                    <Label class="font-medium capitalize text-sm">{{ formatFieldName(key) }}</Label>
+                                    <span class="text-sm text-muted-foreground break-words sm:text-right sm:max-w-[60%]">{{ value }}</span>
                                 </div>
                             </div>
                         </CardContent>
@@ -83,7 +87,7 @@
                 </div>
 
                 <!-- Sidebar -->
-                <div class="space-y-6">
+                <div class="order-2 lg:order-2 space-y-4 lg:space-y-6">
                     <!-- Contact Information -->
                     <Card>
                         <CardHeader>
@@ -95,7 +99,7 @@
                         <CardContent class="space-y-4">
                             <div>
                                 <Label class="text-sm font-medium text-muted-foreground">Nome completo</Label>
-                                <p class="text-sm font-medium mt-1">{{ contact.name }}</p>
+                                <p class="text-sm font-medium mt-1 break-words">{{ contact.name }}</p>
                             </div>
                             
                             <div>
@@ -103,10 +107,10 @@
                                 <p class="text-sm mt-1">
                                     <a 
                                         :href="`mailto:${contact.email}`" 
-                                        class="text-blue-600 hover:underline flex items-center gap-1"
+                                        class="text-blue-600 hover:underline flex items-center gap-1 break-all"
                                     >
-                                        <Mail class="h-3 w-3" />
-                                        {{ contact.email }}
+                                        <Mail class="h-3 w-3 flex-shrink-0" />
+                                        <span class="truncate lg:break-all lg:whitespace-normal">{{ contact.email }}</span>
                                     </a>
                                 </p>
                             </div>
@@ -118,7 +122,7 @@
                                         :href="`tel:${contact.phone}`" 
                                         class="text-blue-600 hover:underline flex items-center gap-1"
                                     >
-                                        <Phone class="h-3 w-3" />
+                                        <Phone class="h-3 w-3 flex-shrink-0" />
                                         {{ contact.phone }}
                                     </a>
                                 </p>
@@ -127,8 +131,8 @@
                             <div v-if="contact.company">
                                 <Label class="text-sm font-medium text-muted-foreground">Azienda</Label>
                                 <p class="text-sm mt-1 flex items-center gap-1">
-                                    <Building class="h-3 w-3" />
-                                    {{ contact.company }}
+                                    <Building class="h-3 w-3 flex-shrink-0" />
+                                    <span class="break-words">{{ contact.company }}</span>
                                 </p>
                             </div>
                         </CardContent>
@@ -145,19 +149,19 @@
                         <CardContent class="space-y-4">
                             <div v-if="contact.origin">
                                 <Label class="text-sm font-medium text-muted-foreground">Sito di origine</Label>
-                                <p class="text-sm mt-1 break-all">
+                                <p class="text-sm mt-1">
                                     <a 
                                         v-if="isValidUrl(contact.origin)"
                                         :href="contact.origin" 
                                         target="_blank"
-                                        class="text-blue-600 hover:underline flex items-center gap-1"
+                                        class="text-blue-600 hover:underline flex items-start gap-1 break-all"
                                     >
-                                        <ExternalLink class="h-3 w-3" />
-                                        {{ contact.origin }}
+                                        <ExternalLink class="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                        <span class="break-all">{{ contact.origin }}</span>
                                     </a>
-                                    <span v-else class="flex items-center gap-1">
-                                        <Globe class="h-3 w-3" />
-                                        {{ contact.origin }}
+                                    <span v-else class="flex items-start gap-1">
+                                        <Globe class="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                        <span class="break-all">{{ contact.origin }}</span>
                                     </span>
                                 </p>
                             </div>
@@ -165,20 +169,22 @@
                             <div v-if="contact.ip_address">
                                 <Label class="text-sm font-medium text-muted-foreground">Indirizzo IP</Label>
                                 <p class="text-sm mt-1 font-mono flex items-center gap-1">
-                                    <Wifi class="h-3 w-3" />
+                                    <Wifi class="h-3 w-3 flex-shrink-0" />
                                     {{ contact.ip_address }}
                                 </p>
                             </div>
                             
                             <div v-if="contact.user_agent">
                                 <Label class="text-sm font-medium text-muted-foreground">Browser utilizzato</Label>
-                                <p class="text-xs text-muted-foreground mt-1 break-all leading-relaxed">{{ contact.user_agent }}</p>
+                                <div class="mt-1 p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
+                                    <p class="text-xs text-muted-foreground break-words leading-relaxed">{{ contact.user_agent }}</p>
+                                </div>
                             </div>
                             
                             <div>
                                 <Label class="text-sm font-medium text-muted-foreground">Data e ora ricezione</Label>
                                 <p class="text-sm mt-1 flex items-center gap-1">
-                                    <Calendar class="h-3 w-3" />
+                                    <Calendar class="h-3 w-3 flex-shrink-0" />
                                     {{ formatDate(contact.created_at) }}
                                 </p>
                             </div>
@@ -199,39 +205,44 @@
                         <CardContent class="space-y-3">
                             <Button 
                                 variant="outline" 
+                                size="sm"
                                 class="w-full justify-start"
                                 @click="composeEmail"
                             >
-                                <Reply class="h-4 w-4 mr-2" />
-                                Rispondi via email
+                                <Reply class="h-4 w-4 mr-2 flex-shrink-0" />
+                                <span class="truncate">Rispondi via email</span>
                             </Button>
                             
                             <Button 
-                                variant="outline" 
+                                variant="outline"
+                                size="sm" 
                                 class="w-full justify-start"
                                 @click="copyToClipboard(contact.email)"
                             >
-                                <Copy class="h-4 w-4 mr-2" />
-                                Copia indirizzo email
+                                <Copy class="h-4 w-4 mr-2 flex-shrink-0" />
+                                <span class="truncate">Copia indirizzo email</span>
                             </Button>
                             
                             <Button 
-                                variant="outline" 
+                                variant="outline"
+                                size="sm" 
                                 class="w-full justify-start"
                                 @click="exportContact"
                             >
-                                <Download class="h-4 w-4 mr-2" />
-                                Esporta contatto (JSON)
+                                <Download class="h-4 w-4 mr-2 flex-shrink-0" />
+                                <span class="hidden sm:inline">Esporta contatto (JSON)</span>
+                                <span class="sm:hidden">Esporta contatto</span>
                             </Button>
                             
                             <div class="pt-2 border-t">
                                 <Button 
-                                    variant="destructive" 
+                                    variant="destructive"
+                                    size="sm" 
                                     class="w-full justify-start"
                                     @click="deleteContact"
                                 >
-                                    <Trash class="h-4 w-4 mr-2" />
-                                    Elimina contatto
+                                    <Trash class="h-4 w-4 mr-2 flex-shrink-0" />
+                                    <span class="truncate">Elimina contatto</span>
                                 </Button>
                             </div>
                         </CardContent>
@@ -243,7 +254,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import { type BreadcrumbItem } from '@/types'
 import AppLayout from '@/layouts/AppLayout.vue'
@@ -300,10 +311,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: props.contact.name, href: `/contacts/${props.contact.id}` },
 ]
 
-// Local reactive state for the contact read status
-const contactState = reactive({
-    read: props.contact.read
-})
+// Remove local state - Inertia handles data updates automatically
 
 function goBack() {
     // Use router.get with preserveState to maintain updated contact status
@@ -316,27 +324,13 @@ function goBack() {
 
 function toggleReadStatus() {
     router.patch(route('contacts.toggle-read', props.contact.id), {}, {
-        preserveState: true,
-        onSuccess: () => {
-            contactState.read = !contactState.read
-        },
-        onError: (errors) => {
-            console.error('Errore nel cambio stato:', errors)
-        }
+        preserveState: true
     })
 }
 
 function deleteContact() {
     if (confirm('Sei sicuro di voler eliminare questo contatto? Questa azione non può essere annullata.')) {
-        router.delete(route('contacts.destroy', props.contact.id), {
-            onSuccess: () => {
-                router.visit(route('contacts.index'))
-            },
-            onError: (errors) => {
-                console.error('Errore nell\'eliminazione:', errors)
-                alert('Errore durante l\'eliminazione del contatto')
-            }
-        })
+        router.delete(route('contacts.destroy', props.contact.id))
     }
 }
 
@@ -381,7 +375,7 @@ function exportContact() {
         origine: props.contact.origin || 'Sconosciuta',
         indirizzo_ip: props.contact.ip_address || 'Non disponibile',
         user_agent: props.contact.user_agent || 'Non disponibile',
-        stato: contactState.read ? 'Letto' : 'Non letto',
+        stato: props.contact.read ? 'Letto' : 'Non letto',
         data_ricezione: formatDate(props.contact.created_at),
         ...(props.contact.extra_data || {})
     }
