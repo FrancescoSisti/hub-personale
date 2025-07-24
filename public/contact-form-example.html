@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esempio Form di Contatto - API Integration</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .contact-form {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        
+        .required {
+            color: #e74c3c;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+        
+        button:hover:not(:disabled) {
+            background: #0056b3;
+        }
+        
+        .contact-message {
+            margin-top: 20px;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .example-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+        
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .code-block pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Esempio Form di Contatto</h1>
+        
+        <div class="info-box">
+            <h3>Come utilizzare questa API</h3>
+            <p>Questo è un esempio di integrazione dell'API per form di contatto. Lo script si collegherà automaticamente a qualsiasi form con la classe <code>contact-form</code>.</p>
+            <p><strong>Endpoint API:</strong> <code>/api/v1/contacts</code></p>
+        </div>
+        
+        <!-- Form di contatto -->
+        <form class="contact-form">
+            <div class="form-group">
+                <label for="name">Nome <span class="required">*</span></label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email <span class="required">*</span></label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="subject">Oggetto</label>
+                <input type="text" id="subject" name="subject">
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">Telefono</label>
+                <input type="tel" id="phone" name="phone">
+            </div>
+            
+            <div class="form-group">
+                <label for="company">Azienda</label>
+                <input type="text" id="company" name="company">
+            </div>
+            
+            <div class="form-group">
+                <label for="message">Messaggio <span class="required">*</span></label>
+                <textarea id="message" name="message" required placeholder="Inserisci il tuo messaggio qui..."></textarea>
+            </div>
+            
+            <!-- Campi extra di esempio -->
+            <div class="form-group">
+                <label for="source">Come ci hai conosciuto?</label>
+                <select id="source" name="source">
+                    <option value="">Seleziona...</option>
+                    <option value="google">Google</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="referral">Passaparola</option>
+                    <option value="other">Altro</option>
+                </select>
+            </div>
+            
+            <button type="submit">Invia Messaggio</button>
+            
+            <!-- Container per i messaggi -->
+            <div class="contact-message"></div>
+        </form>
+        
+        <div class="example-section">
+            <h2>Integrazione del codice</h2>
+            
+            <h3>1. Include lo script</h3>
+            <div class="code-block">
+                <pre>&lt;script src="https://your-domain.com/contact-form-integration.js"&gt;&lt;/script&gt;</pre>
+            </div>
+            
+            <h3>2. Crea il form HTML</h3>
+            <div class="code-block">
+                <pre>&lt;form class="contact-form"&gt;
+    &lt;input type="text" name="name" placeholder="Nome" required&gt;
+    &lt;input type="email" name="email" placeholder="Email" required&gt;
+    &lt;textarea name="message" placeholder="Messaggio" required&gt;&lt;/textarea&gt;
+    &lt;button type="submit"&gt;Invia&lt;/button&gt;
+    &lt;div class="contact-message"&gt;&lt;/div&gt;
+&lt;/form&gt;</pre>
+            </div>
+            
+            <h3>3. Configurazione personalizzata (opzionale)</h3>
+            <div class="code-block">
+                <pre>&lt;script&gt;
+// Configurazione personalizzata
+const customContactAPI = new ContactFormAPI({
+    baseUrl: 'https://your-domain.com/api/v1',
+    formSelector: '.my-contact-form',
+    messageContainerSelector: '.my-message-container'
+});
+&lt;/script&gt;</pre>
+            </div>
+            
+            <h3>4. Uso programmatico</h3>
+            <div class="code-block">
+                <pre>&lt;script&gt;
+// Invio manuale
+contactFormAPI.submit({
+    name: 'Mario Rossi',
+    email: 'mario@example.com',
+    message: 'Ciao, sono interessato ai vostri servizi.'
+}).then(result => {
+    console.log('Risultato:', result);
+});
+&lt;/script&gt;</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include lo script dell'API -->
+    <script>
+        // Configura l'URL di base per il tuo dominio
+        // IMPORTANTE: Modifica questo URL con il tuo dominio reale
+        const API_BASE_URL = window.location.origin + '/api/v1';
+        
+        // Include lo script inline per questo esempio
+        // In produzione, carica da file esterno
+    </script>
+    <script src="contact-form-integration.js"></script>
+    <script>
+        // Override della configurazione per questo esempio
+        window.contactFormAPI = new ContactFormAPI({
+            baseUrl: API_BASE_URL
+        });
+    </script>
+</body>
+</html> 
