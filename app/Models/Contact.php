@@ -22,11 +22,15 @@ class Contact extends Model
         'ip_address',
         'user_agent',
         'read',
+        'processed_at',
+        'processed_by_job',
     ];
 
     protected $casts = [
         'extra_data' => 'array',
         'read' => 'boolean',
+        'processed_by_job' => 'boolean',
+        'processed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
