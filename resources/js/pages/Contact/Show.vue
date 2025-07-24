@@ -306,7 +306,12 @@ const contactState = reactive({
 })
 
 function goBack() {
-    router.visit(route('contacts.index'))
+    // Use router.get with preserveState to maintain updated contact status
+    router.get(route('contacts.index'), {}, {
+        preserveState: false, // We want to refresh data to show updated read status
+        preserveScroll: true,
+        only: ['contacts', 'stats'] // Only reload necessary data
+    })
 }
 
 function toggleReadStatus() {

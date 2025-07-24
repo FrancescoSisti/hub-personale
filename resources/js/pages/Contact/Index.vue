@@ -4,47 +4,56 @@
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
             <!-- Header -->
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                    <h1 class="text-3xl font-bold tracking-tight">Gestione Contatti</h1>
-                    <p class="text-muted-foreground">
+                    <h1 class="text-2xl lg:text-3xl font-bold tracking-tight">Gestione Contatti</h1>
+                    <p class="text-sm lg:text-base text-muted-foreground">
                         Gestisci i messaggi ricevuti dai form di contatto esterni
                     </p>
                 </div>
-                <div class="flex items-center gap-4">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                    <div class="flex gap-2 sm:gap-4" v-if="selectedContacts.length > 0">
+                        <Button 
+                            variant="outline"
+                            size="sm"
+                            @click="markSelectedAsRead"
+                            class="flex-1 sm:flex-initial"
+                        >
+                            <span class="hidden sm:inline">Marca come letti ({{ selectedContacts.length }})</span>
+                            <span class="sm:hidden">Letti ({{ selectedContacts.length }})</span>
+                        </Button>
+                        <Button 
+                            variant="destructive"
+                            size="sm"
+                            @click="deleteSelected"
+                            class="flex-1 sm:flex-initial"
+                        >
+                            <span class="hidden sm:inline">Elimina selezionati</span>
+                            <span class="sm:hidden">Elimina</span>
+                        </Button>
+                    </div>
                     <Button 
-                        v-if="selectedContacts.length > 0"
                         variant="outline"
-                        @click="markSelectedAsRead"
-                    >
-                        Marca come letti ({{ selectedContacts.length }})
-                    </Button>
-                    <Button 
-                        v-if="selectedContacts.length > 0"
-                        variant="destructive"
-                        @click="deleteSelected"
-                    >
-                        Elimina selezionati
-                    </Button>
-                    <Button 
-                        variant="outline"
+                        size="sm"
                         @click="exportContacts"
+                        class="self-start sm:self-auto"
                     >
                         <Download class="mr-2 h-4 w-4" />
-                        Esporta CSV
+                        <span class="hidden sm:inline">Esporta CSV</span>
+                        <span class="sm:hidden">Esporta</span>
                     </Button>
                 </div>
             </div>
 
             <!-- Statistics Cards -->
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div class="grid gap-4 grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle class="text-sm font-medium">Totali</CardTitle>
                         <Mail class="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div class="text-2xl font-bold">{{ stats.total }}</div>
+                        <div class="text-xl lg:text-2xl font-bold">{{ stats.total }}</div>
                         <p class="text-xs text-muted-foreground">
                             Messaggi ricevuti
                         </p>
@@ -57,7 +66,7 @@
                         <MailOpen class="h-4 w-4 text-orange-500" />
                     </CardHeader>
                     <CardContent>
-                        <div class="text-2xl font-bold text-orange-600">{{ stats.unread }}</div>
+                        <div class="text-xl lg:text-2xl font-bold text-orange-600">{{ stats.unread }}</div>
                         <p class="text-xs text-muted-foreground">
                             Da leggere
                         </p>
@@ -70,7 +79,7 @@
                         <Calendar class="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div class="text-2xl font-bold text-green-600">{{ stats.today }}</div>
+                        <div class="text-xl lg:text-2xl font-bold text-green-600">{{ stats.today }}</div>
                         <p class="text-xs text-muted-foreground">
                             Ricevuti oggi
                         </p>
@@ -83,7 +92,7 @@
                         <CalendarDays class="h-4 w-4 text-purple-500" />
                     </CardHeader>
                     <CardContent>
-                        <div class="text-2xl font-bold text-purple-600">{{ stats.this_week }}</div>
+                        <div class="text-xl lg:text-2xl font-bold text-purple-600">{{ stats.this_week }}</div>
                         <p class="text-xs text-muted-foreground">
                             Ultimi 7 giorni
                         </p>
@@ -100,7 +109,8 @@
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="space-y-4">
+                        <!-- Search - Full width on mobile -->
                         <div>
                             <Label for="search">Ricerca</Label>
                             <Input
@@ -110,41 +120,45 @@
                                 @input="debouncedSearch"
                             />
                         </div>
-                        <div>
-                            <Label for="status">Stato</Label>
-                            <Select v-model="filters.status" @update:model-value="applyFilters">
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Tutti" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Tutti</SelectItem>
-                                    <SelectItem value="unread">Non letti</SelectItem>
-                                    <SelectItem value="read">Letti</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div>
-                            <Label for="origin">Origine</Label>
-                            <Select v-model="filters.origin" @update:model-value="applyFilters">
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Tutte" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Tutte</SelectItem>
-                                    <SelectItem v-for="origin in origins" :key="origin.origin" :value="origin.origin">
-                                        {{ origin.origin }} ({{ origin.count }})
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div>
-                            <Label for="date_from">Data da</Label>
-                            <Input
-                                id="date_from"
-                                v-model="filters.date_from"
-                                type="date"
-                                @change="applyFilters"
-                            />
+                        
+                        <!-- Filters grid - responsive layout -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <Label for="status">Stato</Label>
+                                <Select v-model="filters.status" @update:model-value="applyFilters">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Tutti" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Tutti</SelectItem>
+                                        <SelectItem value="unread">Non letti</SelectItem>
+                                        <SelectItem value="read">Letti</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label for="origin">Origine</Label>
+                                <Select v-model="filters.origin" @update:model-value="applyFilters">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Tutte" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Tutte</SelectItem>
+                                        <SelectItem v-for="origin in origins" :key="origin.origin" :value="origin.origin">
+                                            {{ origin.origin }} ({{ origin.count }})
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label for="date_from">Data da</Label>
+                                <Input
+                                    id="date_from"
+                                    v-model="filters.date_from"
+                                    type="date"
+                                    @change="applyFilters"
+                                />
+                            </div>
                         </div>
                     </div>
                     <div class="flex justify-between items-center mt-4">
@@ -180,10 +194,11 @@
                 </CardContent>
             </Card>
 
-            <!-- Contacts Table -->
+            <!-- Contacts Table/Cards -->
             <Card v-else>
                 <CardContent class="p-0">
-                    <div class="overflow-x-auto">
+                    <!-- Desktop Table View -->
+                    <div class="hidden lg:block overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -274,19 +289,118 @@
                             </TableBody>
                         </Table>
                     </div>
+
+                    <!-- Mobile Card View -->
+                    <div class="lg:hidden p-4 space-y-4">
+                        <!-- Mobile Bulk Actions -->
+                        <div v-if="selectedContacts.length > 0" class="flex gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                            <Button size="sm" variant="outline" @click="markSelectedAsRead">
+                                Marca come letti ({{ selectedContacts.length }})
+                            </Button>
+                            <Button size="sm" variant="destructive" @click="deleteSelected">
+                                Elimina
+                            </Button>
+                        </div>
+
+                        <!-- Mobile Select All -->
+                        <div class="flex items-center justify-between p-2 border-b">
+                            <div class="flex items-center gap-2">
+                                <Checkbox 
+                                    :checked="allSelected"
+                                    @update:checked="toggleSelectAll"
+                                />
+                                <span class="text-sm text-muted-foreground">Seleziona tutti</span>
+                            </div>
+                            <div class="text-sm text-muted-foreground">
+                                {{ contacts.data.length }} contatti
+                            </div>
+                        </div>
+
+                        <!-- Contact Cards -->
+                        <div 
+                            v-for="contact in contacts.data" 
+                            :key="contact.id"
+                            class="border rounded-lg p-4 space-y-3"
+                            :class="!contact.read ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800' : ''"
+                        >
+                            <!-- Card Header -->
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-3 flex-1">
+                                    <Checkbox 
+                                        :checked="selectedContacts.includes(contact.id)"
+                                        @update:checked="toggleContact(contact.id)"
+                                        class="mt-1"
+                                    />
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <Badge :variant="contact.read ? 'secondary' : 'default'" class="text-xs">
+                                                {{ contact.read ? 'Letto' : 'Non letto' }}
+                                            </Badge>
+                                        </div>
+                                        <Link :href="route('contacts.show', contact.id)" class="font-medium text-blue-600 hover:underline">
+                                            {{ contact.name }}
+                                        </Link>
+                                        <div class="text-sm text-muted-foreground">
+                                            {{ contact.email }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1 ml-2">
+                                    <Button 
+                                        size="sm" 
+                                        variant="ghost"
+                                        @click="toggleReadStatus(contact)"
+                                    >
+                                        <MailOpen v-if="!contact.read" class="h-4 w-4" />
+                                        <Mail v-else class="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                        size="sm" 
+                                        variant="ghost"
+                                        @click="deleteContact(contact)"
+                                    >
+                                        <Trash class="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <!-- Card Content -->
+                            <div class="space-y-2 text-sm">
+                                <div v-if="contact.subject">
+                                    <span class="font-medium">Oggetto:</span>
+                                    <span class="text-muted-foreground ml-1">{{ contact.subject }}</span>
+                                </div>
+                                <div v-if="contact.company">
+                                    <span class="font-medium">Azienda:</span>
+                                    <span class="text-muted-foreground ml-1">{{ contact.company }}</span>
+                                </div>
+                                <div class="text-xs text-muted-foreground">
+                                    {{ formatDate(contact.created_at) }}
+                                </div>
+                            </div>
+
+                            <!-- Message Preview -->
+                            <div v-if="contact.message" class="text-sm text-muted-foreground">
+                                <div class="bg-gray-50 dark:bg-gray-900 p-2 rounded text-xs">
+                                    {{ contact.message.length > 120 ? contact.message.substring(0, 120) + '...' : contact.message }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     
                     <!-- Pagination -->
                     <div v-if="contacts.last_page > 1" class="border-t p-4">
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm text-muted-foreground">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="text-sm text-muted-foreground text-center sm:text-left">
                                 Mostrando {{ contacts.from }} - {{ contacts.to }} di {{ contacts.total }} risultati
                             </div>
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 justify-center sm:justify-end">
                                 <Button 
                                     variant="outline" 
                                     size="sm"
                                     :disabled="!contacts.prev_page_url"
                                     @click="goToPage(contacts.current_page - 1)"
+                                    class="flex-1 sm:flex-initial"
                                 >
                                     Precedente
                                 </Button>
@@ -295,6 +409,7 @@
                                     size="sm"
                                     :disabled="!contacts.next_page_url"
                                     @click="goToPage(contacts.current_page + 1)"
+                                    class="flex-1 sm:flex-initial"
                                 >
                                     Successiva
                                 </Button>
