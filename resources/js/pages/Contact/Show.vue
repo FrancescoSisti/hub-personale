@@ -1,208 +1,276 @@
 <template>
-    <AppLayout>
-        <template #header>
+    <Head title="Dettaglio Contatto" />
+
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div class="flex h-full flex-1 flex-col gap-6 p-6">
+            <!-- Header -->
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <Button variant="ghost" @click="goBack">
-                        <Icon name="arrow-left" class="h-4 w-4 mr-2" />
+                        <ArrowLeft class="h-4 w-4 mr-2" />
                         Indietro
                     </Button>
                     <div>
-                        <Heading :title="`Contatto da ${contact.name}`" />
+                        <h1 class="text-3xl font-bold tracking-tight">Contatto da {{ contact.name }}</h1>
                         <div class="flex items-center gap-2 mt-1">
-                            <Badge :variant="contact.read ? 'secondary' : 'default'">
-                                {{ contact.read ? 'Letto' : 'Non letto' }}
+                            <Badge :variant="contactState.read ? 'secondary' : 'default'">
+                                {{ contactState.read ? 'Letto' : 'Non letto' }}
                             </Badge>
                             <span class="text-sm text-muted-foreground">
-                                {{ formatDate(contact.created_at) }}
+                                Ricevuto il {{ formatDate(contact.created_at) }}
                             </span>
                         </div>
                     </div>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex items-center gap-4">
                     <Button variant="outline" @click="toggleReadStatus">
-                        <Icon :name="contact.read ? 'mail' : 'mail-open'" class="h-4 w-4 mr-2" />
-                        {{ contact.read ? 'Marca come non letto' : 'Marca come letto' }}
+                        <MailOpen v-if="!contactState.read" class="h-4 w-4 mr-2" />
+                        <Mail v-else class="h-4 w-4 mr-2" />
+                        {{ contactState.read ? 'Marca come non letto' : 'Marca come letto' }}
                     </Button>
                     <Button variant="destructive" @click="deleteContact">
-                        <Icon name="trash" class="h-4 w-4 mr-2" />
+                        <Trash class="h-4 w-4 mr-2" />
                         Elimina
                     </Button>
                 </div>
             </div>
-        </template>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Main Content -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Message -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Messaggio</CardTitle>
-                        <CardDescription v-if="contact.subject">
-                            Oggetto: {{ contact.subject }}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="prose prose-sm max-w-none">
-                            <p class="whitespace-pre-wrap">{{ contact.message }}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <!-- Extra Data -->
-                <Card v-if="contact.extra_data && Object.keys(contact.extra_data).length > 0">
-                    <CardHeader>
-                        <CardTitle>Dati aggiuntivi</CardTitle>
-                        <CardDescription>
-                            Informazioni extra inviate dal form
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="space-y-2">
-                            <div 
-                                v-for="(value, key) in contact.extra_data" 
-                                :key="key"
-                                class="flex justify-between py-2 border-b last:border-b-0"
-                            >
-                                <span class="font-medium capitalize">{{ key.replace('_', ' ') }}:</span>
-                                <span>{{ value }}</span>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Main Content -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Message -->
+                    <Card>
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <MessageSquare class="h-5 w-5" />
+                                Messaggio
+                            </CardTitle>
+                            <CardDescription v-if="contact.subject">
+                                <span class="font-medium">Oggetto:</span> {{ contact.subject }}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="prose prose-sm max-w-none dark:prose-invert">
+                                <p class="whitespace-pre-wrap text-sm leading-relaxed">{{ contact.message }}</p>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                        </CardContent>
+                    </Card>
 
-            <!-- Sidebar -->
-            <div class="space-y-6">
-                <!-- Contact Information -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Informazioni contatto</CardTitle>
-                    </CardHeader>
-                    <CardContent class="space-y-4">
-                        <div>
-                            <Label class="font-medium">Nome</Label>
-                            <p class="text-sm">{{ contact.name }}</p>
-                        </div>
-                        
-                        <div>
-                            <Label class="font-medium">Email</Label>
-                            <p class="text-sm">
-                                <a 
-                                    :href="`mailto:${contact.email}`" 
-                                    class="text-blue-600 hover:underline"
+                    <!-- Extra Data -->
+                    <Card v-if="contact.extra_data && Object.keys(contact.extra_data).length > 0">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Database class="h-5 w-5" />
+                                Dati aggiuntivi
+                            </CardTitle>
+                            <CardDescription>
+                                Informazioni extra inviate dal form di contatto
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="space-y-3">
+                                <div 
+                                    v-for="(value, key) in contact.extra_data" 
+                                    :key="key"
+                                    class="flex items-center justify-between py-3 border-b last:border-b-0"
                                 >
-                                    {{ contact.email }}
-                                </a>
-                            </p>
-                        </div>
-                        
-                        <div v-if="contact.phone">
-                            <Label class="font-medium">Telefono</Label>
-                            <p class="text-sm">
-                                <a 
-                                    :href="`tel:${contact.phone}`" 
-                                    class="text-blue-600 hover:underline"
-                                >
-                                    {{ contact.phone }}
-                                </a>
-                            </p>
-                        </div>
-                        
-                        <div v-if="contact.company">
-                            <Label class="font-medium">Azienda</Label>
-                            <p class="text-sm">{{ contact.company }}</p>
-                        </div>
-                    </CardContent>
-                </Card>
+                                    <Label class="font-medium capitalize">{{ formatFieldName(key) }}</Label>
+                                    <span class="text-sm text-muted-foreground">{{ value }}</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
-                <!-- Technical Information -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Informazioni tecniche</CardTitle>
-                    </CardHeader>
-                    <CardContent class="space-y-4">
-                        <div v-if="contact.origin">
-                            <Label class="font-medium">Origine</Label>
-                            <p class="text-sm break-all">
-                                <a 
-                                    v-if="isValidUrl(contact.origin)"
-                                    :href="contact.origin" 
-                                    target="_blank"
-                                    class="text-blue-600 hover:underline"
-                                >
-                                    {{ contact.origin }}
-                                </a>
-                                <span v-else>{{ contact.origin }}</span>
-                            </p>
-                        </div>
-                        
-                        <div v-if="contact.ip_address">
-                            <Label class="font-medium">Indirizzo IP</Label>
-                            <p class="text-sm font-mono">{{ contact.ip_address }}</p>
-                        </div>
-                        
-                        <div v-if="contact.user_agent">
-                            <Label class="font-medium">User Agent</Label>
-                            <p class="text-xs text-muted-foreground break-all">{{ contact.user_agent }}</p>
-                        </div>
-                        
-                        <div>
-                            <Label class="font-medium">Data ricezione</Label>
-                            <p class="text-sm">{{ formatDate(contact.created_at) }}</p>
-                        </div>
-                    </CardContent>
-                </Card>
+                <!-- Sidebar -->
+                <div class="space-y-6">
+                    <!-- Contact Information -->
+                    <Card>
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <User class="h-5 w-5" />
+                                Informazioni contatto
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent class="space-y-4">
+                            <div>
+                                <Label class="text-sm font-medium text-muted-foreground">Nome completo</Label>
+                                <p class="text-sm font-medium mt-1">{{ contact.name }}</p>
+                            </div>
+                            
+                            <div>
+                                <Label class="text-sm font-medium text-muted-foreground">Indirizzo email</Label>
+                                <p class="text-sm mt-1">
+                                    <a 
+                                        :href="`mailto:${contact.email}`" 
+                                        class="text-blue-600 hover:underline flex items-center gap-1"
+                                    >
+                                        <Mail class="h-3 w-3" />
+                                        {{ contact.email }}
+                                    </a>
+                                </p>
+                            </div>
+                            
+                            <div v-if="contact.phone">
+                                <Label class="text-sm font-medium text-muted-foreground">Numero di telefono</Label>
+                                <p class="text-sm mt-1">
+                                    <a 
+                                        :href="`tel:${contact.phone}`" 
+                                        class="text-blue-600 hover:underline flex items-center gap-1"
+                                    >
+                                        <Phone class="h-3 w-3" />
+                                        {{ contact.phone }}
+                                    </a>
+                                </p>
+                            </div>
+                            
+                            <div v-if="contact.company">
+                                <Label class="text-sm font-medium text-muted-foreground">Azienda</Label>
+                                <p class="text-sm mt-1 flex items-center gap-1">
+                                    <Building class="h-3 w-3" />
+                                    {{ contact.company }}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                <!-- Quick Actions -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Azioni rapide</CardTitle>
-                    </CardHeader>
-                    <CardContent class="space-y-2">
-                        <Button 
-                            variant="outline" 
-                            class="w-full justify-start"
-                            @click="composeEmail"
-                        >
-                            <Icon name="reply" class="h-4 w-4 mr-2" />
-                            Rispondi via email
-                        </Button>
-                        
-                        <Button 
-                            variant="outline" 
-                            class="w-full justify-start"
-                            @click="copyToClipboard(contact.email)"
-                        >
-                            <Icon name="copy" class="h-4 w-4 mr-2" />
-                            Copia email
-                        </Button>
-                        
-                        <Button 
-                            variant="outline" 
-                            class="w-full justify-start"
-                            @click="exportContact"
-                        >
-                            <Icon name="download" class="h-4 w-4 mr-2" />
-                            Esporta contatto
-                        </Button>
-                    </CardContent>
-                </Card>
+                    <!-- Technical Information -->
+                    <Card>
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Settings class="h-5 w-5" />
+                                Informazioni tecniche
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent class="space-y-4">
+                            <div v-if="contact.origin">
+                                <Label class="text-sm font-medium text-muted-foreground">Sito di origine</Label>
+                                <p class="text-sm mt-1 break-all">
+                                    <a 
+                                        v-if="isValidUrl(contact.origin)"
+                                        :href="contact.origin" 
+                                        target="_blank"
+                                        class="text-blue-600 hover:underline flex items-center gap-1"
+                                    >
+                                        <ExternalLink class="h-3 w-3" />
+                                        {{ contact.origin }}
+                                    </a>
+                                    <span v-else class="flex items-center gap-1">
+                                        <Globe class="h-3 w-3" />
+                                        {{ contact.origin }}
+                                    </span>
+                                </p>
+                            </div>
+                            
+                            <div v-if="contact.ip_address">
+                                <Label class="text-sm font-medium text-muted-foreground">Indirizzo IP</Label>
+                                <p class="text-sm mt-1 font-mono flex items-center gap-1">
+                                    <Wifi class="h-3 w-3" />
+                                    {{ contact.ip_address }}
+                                </p>
+                            </div>
+                            
+                            <div v-if="contact.user_agent">
+                                <Label class="text-sm font-medium text-muted-foreground">Browser utilizzato</Label>
+                                <p class="text-xs text-muted-foreground mt-1 break-all leading-relaxed">{{ contact.user_agent }}</p>
+                            </div>
+                            
+                            <div>
+                                <Label class="text-sm font-medium text-muted-foreground">Data e ora ricezione</Label>
+                                <p class="text-sm mt-1 flex items-center gap-1">
+                                    <Calendar class="h-3 w-3" />
+                                    {{ formatDate(contact.created_at) }}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <!-- Quick Actions -->
+                    <Card>
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Zap class="h-5 w-5" />
+                                Azioni rapide
+                            </CardTitle>
+                            <CardDescription>
+                                Strumenti per gestire questo contatto
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent class="space-y-3">
+                            <Button 
+                                variant="outline" 
+                                class="w-full justify-start"
+                                @click="composeEmail"
+                            >
+                                <Reply class="h-4 w-4 mr-2" />
+                                Rispondi via email
+                            </Button>
+                            
+                            <Button 
+                                variant="outline" 
+                                class="w-full justify-start"
+                                @click="copyToClipboard(contact.email)"
+                            >
+                                <Copy class="h-4 w-4 mr-2" />
+                                Copia indirizzo email
+                            </Button>
+                            
+                            <Button 
+                                variant="outline" 
+                                class="w-full justify-start"
+                                @click="exportContact"
+                            >
+                                <Download class="h-4 w-4 mr-2" />
+                                Esporta contatto (JSON)
+                            </Button>
+                            
+                            <div class="pt-2 border-t">
+                                <Button 
+                                    variant="destructive" 
+                                    class="w-full justify-start"
+                                    @click="deleteContact"
+                                >
+                                    <Trash class="h-4 w-4 mr-2" />
+                                    Elimina contatto
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3'
+import { ref, reactive } from 'vue'
+import { Head, router } from '@inertiajs/vue3'
+import { type BreadcrumbItem } from '@/types'
 import AppLayout from '@/layouts/AppLayout.vue'
-import Heading from '@/components/Heading.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
-import Icon from '@/components/Icon.vue'
+import { 
+    ArrowLeft,
+    Mail, 
+    MailOpen, 
+    Trash,
+    MessageSquare,
+    Database,
+    User,
+    Phone,
+    Building,
+    Settings,
+    ExternalLink,
+    Globe,
+    Wifi,
+    Calendar,
+    Zap,
+    Reply,
+    Copy,
+    Download
+} from 'lucide-vue-next'
 
 interface Contact {
     id: number
@@ -226,24 +294,42 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Contatti', href: '/contacts' },
+    { title: props.contact.name, href: `/contacts/${props.contact.id}` },
+]
+
+// Local reactive state for the contact read status
+const contactState = reactive({
+    read: props.contact.read
+})
+
 function goBack() {
-    window.history.back()
+    router.visit(route('contacts.index'))
 }
 
 function toggleReadStatus() {
     router.patch(route('contacts.toggle-read', props.contact.id), {}, {
         preserveState: true,
         onSuccess: () => {
-            props.contact.read = !props.contact.read
+            contactState.read = !contactState.read
+        },
+        onError: (errors) => {
+            console.error('Errore nel cambio stato:', errors)
         }
     })
 }
 
 function deleteContact() {
-    if (confirm('Sei sicuro di voler eliminare questo contatto?')) {
+    if (confirm('Sei sicuro di voler eliminare questo contatto? Questa azione non può essere annullata.')) {
         router.delete(route('contacts.destroy', props.contact.id), {
             onSuccess: () => {
                 router.visit(route('contacts.index'))
+            },
+            onError: (errors) => {
+                console.error('Errore nell\'eliminazione:', errors)
+                alert('Errore durante l\'eliminazione del contatto')
             }
         })
     }
@@ -254,30 +340,44 @@ function composeEmail() {
         `Re: ${props.contact.subject}` : 
         'Risposta alla tua richiesta di contatto'
     
-    const body = `Ciao ${props.contact.name},\n\nGrazie per averci contattato.\n\nCordiali saluti`
+    const body = `Ciao ${props.contact.name},
+
+Grazie per averci contattato tramite il nostro sito web.
+
+Abbiamo ricevuto il tuo messaggio e ti risponderemo al più presto.
+
+Cordiali saluti,
+Il nostro team`
     
     const mailtoUrl = `mailto:${props.contact.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
     window.open(mailtoUrl)
 }
 
-function copyToClipboard(text: string) {
-    navigator.clipboard.writeText(text).then(() => {
+async function copyToClipboard(text: string) {
+    try {
+        await navigator.clipboard.writeText(text)
         // In a real app, you'd show a toast notification here
-        alert('Email copiata negli appunti!')
-    })
+        alert('Indirizzo email copiato negli appunti!')
+    } catch (err) {
+        console.error('Errore nella copia:', err)
+        alert('Errore nella copia dell\'email')
+    }
 }
 
 function exportContact() {
     const contactData = {
+        id: props.contact.id,
         nome: props.contact.name,
         email: props.contact.email,
-        oggetto: props.contact.subject,
+        oggetto: props.contact.subject || 'Nessun oggetto',
         messaggio: props.contact.message,
-        telefono: props.contact.phone,
-        azienda: props.contact.company,
-        origine: props.contact.origin,
-        ip: props.contact.ip_address,
-        data: formatDate(props.contact.created_at),
+        telefono: props.contact.phone || 'Non fornito',
+        azienda: props.contact.company || 'Non fornita',
+        origine: props.contact.origin || 'Sconosciuta',
+        indirizzo_ip: props.contact.ip_address || 'Non disponibile',
+        user_agent: props.contact.user_agent || 'Non disponibile',
+        stato: contactState.read ? 'Letto' : 'Non letto',
+        data_ricezione: formatDate(props.contact.created_at),
         ...(props.contact.extra_data || {})
     }
     
@@ -296,11 +396,15 @@ function exportContact() {
 function formatDate(dateString: string) {
     return new Date(dateString).toLocaleDateString('it-IT', {
         day: '2-digit',
-        month: '2-digit',
+        month: '2-digit', 
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
     })
+}
+
+function formatFieldName(key: string) {
+    return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
 function isValidUrl(string: string) {
