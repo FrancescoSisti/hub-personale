@@ -88,7 +88,7 @@ const destroyNote = (note: Note) => {
           <form @submit.prevent="createNote" class="grid gap-3 md:grid-cols-6">
             <Input v-model="newNoteForm.title" placeholder="Titolo" class="md:col-span-2" />
             <Input v-model="newNoteForm.color" placeholder="Colore (es. amber, blue)" class="md:col-span-1" />
-            <Textarea v-model="newNoteForm.content" placeholder="Contenuto" rows="2" class="md:col-span-2" />
+            <Textarea v-model="newNoteForm.content" placeholder="Contenuto" :rows="2" class="md:col-span-2" />
             <Button type="submit" class="md:col-span-1">
               <Plus class="mr-2 h-4 w-4" />
               Aggiungi
@@ -98,7 +98,7 @@ const destroyNote = (note: Note) => {
       </Card>
 
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <Card v-for="note in filteredNotes" :key="note.id" :class="note.color ? `border-${note.color}-500` : ''">
+        <Card v-for="note in filteredNotes" :key="note.id" class="border-2" :style="note.color ? { borderColor: note.color } : undefined">
           <CardContent class="p-4 space-y-2">
             <div class="flex items-start justify-between gap-2">
               <div class="min-w-0">

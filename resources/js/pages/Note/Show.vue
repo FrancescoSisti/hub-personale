@@ -66,7 +66,7 @@ const destroyNote = () => {
         </div>
       </div>
 
-      <Card>
+      <Card :style="props.note.color ? { borderColor: props.note.color } : undefined" class="border-2">
         <CardContent class="p-6 grid gap-4">
           <div class="grid gap-4 md:grid-cols-2">
             <div class="space-y-2">
@@ -80,7 +80,7 @@ const destroyNote = () => {
           </div>
           <div class="space-y-2">
             <label for="content" class="text-sm font-medium">Contenuto</label>
-            <Textarea id="content" v-model="form.content" rows="10" />
+            <Textarea id="content" v-model="form.content" :rows="10" />
           </div>
           <div>
             <Button @click="save"><Save class="mr-2 h-4 w-4" /> Salva</Button>

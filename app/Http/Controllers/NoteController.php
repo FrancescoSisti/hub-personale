@@ -28,7 +28,7 @@ class NoteController extends Controller
         ]);
     }
 
-    public function store(StoreNoteRequest $request): JsonResponse
+    public function store(StoreNoteRequest $request)
     {
         $user = $request->user();
         $data = $request->validated();
@@ -38,10 +38,7 @@ class NoteController extends Controller
             'user_id' => $user->id,
         ]);
 
-        return response()->json([
-            'message' => 'Nota creata con successo',
-            'note' => $note,
-        ], 201);
+        return redirect()->route('notes.index')->with('success', 'Nota creata con successo');
     }
 
     public function show(Note $note): Response
@@ -53,16 +50,13 @@ class NoteController extends Controller
         ]);
     }
 
-    public function update(UpdateNoteRequest $request, Note $note): JsonResponse
+    public function update(UpdateNoteRequest $request, Note $note)
     {
         $this->authorize('update', $note);
 
         $note->update($request->validated());
 
-        return response()->json([
-            'message' => 'Nota aggiornata con successo',
-            'note' => $note->fresh(),
-        ]);
+        return back()->with('success', 'Nota aggiornata con successo');
     }
 
     public function destroy(Note $note)
@@ -73,14 +67,11 @@ class NoteController extends Controller
         return back()->with('success', 'Nota eliminata');
     }
 
-    public function togglePin(Note $note): JsonResponse
+    public function togglePin(Note $note)
     {
         $this->authorize('update', $note);
         $note->update(['pinned' => ! $note->pinned]);
 
-        return response()->json([
-            'message' => $note->pinned ? 'Nota fissata in alto' : 'Nota rimossa dai preferiti',
-            'note' => $note->fresh(),
-        ]);
+        return back()->with('success', $note->pinned ? 'Nota fissata in alto' : 'Nota rimossa dai preferiti');
     }
 }
