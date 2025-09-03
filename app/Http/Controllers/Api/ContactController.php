@@ -8,6 +8,7 @@ use App\Models\Contact;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+// Email notification is handled by ContactObserver
 use Illuminate\Support\Facades\RateLimiter;
 
 class ContactController extends Controller
@@ -20,7 +21,7 @@ class ContactController extends Controller
         // Rate limiting per IP
         $clientIp = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $key = 'contact-form:' . $clientIp;
-        
+
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
             return response()->json([
@@ -28,7 +29,7 @@ class ContactController extends Controller
                 'message' => 'Troppi tentativi. Riprova tra ' . $seconds . ' secondi.',
             ], 429);
         }
-        
+
         RateLimiter::hit($key, 300); // 5 minutes
 
         try {
@@ -36,13 +37,15 @@ class ContactController extends Controller
             $contactData = $request->validated();
             $contactData['ip_address'] = $clientIp;
             $contactData['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? '';
-            
+
             // Set origin from referer if not provided
             if (empty($contactData['origin'])) {
                 $contactData['origin'] = $_SERVER['HTTP_REFERER'] ?? 'unknown';
             }
 
             $contact = Contact::create($contactData);
+
+            // Email notification handled by observer on model creation
 
             // Log the contact submission
             Log::info('New contact form submission', [
@@ -57,7 +60,6 @@ class ContactController extends Controller
                 'message' => 'Messaggio inviato con successo. Ti risponderemo al più presto!',
                 'contact_id' => $contact->id,
             ], 201);
-
         } catch (\Exception $e) {
             Log::error('Error creating contact', [
                 'error' => $e->getMessage(),
@@ -78,7 +80,7 @@ class ContactController extends Controller
     {
         try {
             $contact = Contact::findOrFail($id);
-            
+
             return response()->json([
                 'success' => true,
                 'contact' => [

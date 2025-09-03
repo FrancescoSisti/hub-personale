@@ -14,7 +14,7 @@
                 </div>
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                     <div class="flex gap-2 sm:gap-4" v-if="selectedContacts.length > 0">
-                        <Button 
+                        <Button
                             variant="outline"
                             size="sm"
                             @click="markSelectedAsRead"
@@ -23,7 +23,7 @@
                             <span class="hidden sm:inline">Marca come letti ({{ selectedContacts.length }})</span>
                             <span class="sm:hidden">Letti ({{ selectedContacts.length }})</span>
                         </Button>
-                        <Button 
+                        <Button
                             variant="destructive"
                             size="sm"
                             @click="deleteSelected"
@@ -33,7 +33,7 @@
                             <span class="sm:hidden">Elimina</span>
                         </Button>
                     </div>
-                    <Button 
+                    <Button
                         variant="outline"
                         size="sm"
                         @click="exportContacts"
@@ -113,7 +113,7 @@
                     <div class="space-y-4">
                         <!-- Search - Full width on mobile -->
                         <div>
-                            <Label for="search">Ricerca</Label>
+                            <Label for="search" class="mb-1 block">Ricerca</Label>
                             <Input
                                 id="search"
                                 v-model="filters.search"
@@ -121,11 +121,11 @@
                                 @input="debouncedSearch"
                             />
                         </div>
-                        
+
                         <!-- Filters grid - responsive layout -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div>
-                                <Label for="status">Stato</Label>
+                                <Label for="status" class="mb-1 block">Stato</Label>
                                 <Select v-model="filters.status" @update:model-value="applyFilters">
                                     <SelectTrigger>
                                         <SelectValue placeholder="Tutti" />
@@ -138,7 +138,7 @@
                                 </Select>
                             </div>
                             <div>
-                                <Label for="origin">Origine</Label>
+                                <Label for="origin" class="mb-1 block">Origine</Label>
                                 <Select v-model="filters.origin" @update:model-value="applyFilters">
                                     <SelectTrigger>
                                         <SelectValue placeholder="Tutte" />
@@ -152,7 +152,7 @@
                                 </Select>
                             </div>
                             <div>
-                                <Label for="date_from">Data da</Label>
+                                <Label for="date_from" class="mb-1 block">Data da</Label>
                                 <Input
                                     id="date_from"
                                     v-model="filters.date_from"
@@ -160,13 +160,38 @@
                                     @change="applyFilters"
                                 />
                             </div>
+                            <div>
+                                <Label for="date_to" class="mb-1 block">Data a</Label>
+                                <Input
+                                    id="date_to"
+                                    v-model="filters.date_to"
+                                    type="date"
+                                    @change="applyFilters"
+                                />
+                            </div>
                         </div>
                     </div>
-                    <div class="flex justify-between items-center mt-4">
-                        <Button variant="outline" @click="clearFilters">
-                            <X class="mr-2 h-4 w-4" />
-                            Cancella filtri
-                        </Button>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4">
+                        <div class="flex items-center gap-3">
+                            <Button variant="outline" @click="clearFilters">
+                                <X class="mr-2 h-4 w-4" />
+                                Cancella filtri
+                            </Button>
+                            <div class="flex items-center gap-2">
+                                <Label for="per_page" class="text-sm">Per pagina</Label>
+                                <Select v-model="filters.per_page" @update:model-value="applyFilters">
+                                    <SelectTrigger class="w-[110px]">
+                                        <SelectValue placeholder="20" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="10">10</SelectItem>
+                                        <SelectItem value="20">20</SelectItem>
+                                        <SelectItem value="50">50</SelectItem>
+                                        <SelectItem value="100">100</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
                         <div class="text-sm text-muted-foreground">
                             {{ contacts.total }} contatti trovati
                         </div>
@@ -204,10 +229,14 @@
                             <TableHeader>
                                 <TableRow>
                                     <TableHead class="w-12">
-                                        <Checkbox 
-                                            :checked="allSelected"
+                                        <Checkbox
+                                            :checked="allSelected ? true : (someSelected ? 'indeterminate' : false)"
                                             @update:checked="toggleSelectAll"
-                                        />
+                                        >
+                                            <template v-if="someSelected && !allSelected">
+                                                <Minus class="size-3.5" />
+                                            </template>
+                                        </Checkbox>
                                     </TableHead>
                                     <TableHead>
                                         <Button variant="ghost" @click="sortBy('read')">
@@ -234,13 +263,13 @@
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                <TableRow 
-                                    v-for="contact in contacts.data" 
+                                <TableRow
+                                    v-for="contact in contacts.data"
                                     :key="contact.id"
                                     :class="!contact.read ? 'bg-blue-50 dark:bg-blue-950/20' : ''"
                                 >
                                     <TableCell>
-                                        <Checkbox 
+                                        <Checkbox
                                             :checked="selectedContacts.includes(contact.id)"
                                             @update:checked="toggleContact(contact.id)"
                                         />
@@ -269,16 +298,16 @@
                                     </TableCell>
                                     <TableCell>
                                         <div class="flex gap-1">
-                                            <Button 
-                                                size="sm" 
+                                            <Button
+                                                size="sm"
                                                 variant="ghost"
                                                 @click="toggleReadStatus(contact)"
                                             >
                                                 <MailOpen v-if="!contact.read" class="h-4 w-4" />
                                                 <Mail v-else class="h-4 w-4" />
                                             </Button>
-                                            <Button 
-                                                size="sm" 
+                                            <Button
+                                                size="sm"
                                                 variant="ghost"
                                                 @click="deleteContact(contact)"
                                             >
@@ -306,7 +335,7 @@
                         <!-- Mobile Select All -->
                         <div class="flex items-center justify-between p-2 border-b">
                             <div class="flex items-center gap-2">
-                                <Checkbox 
+                                <Checkbox
                                     :checked="allSelected"
                                     @update:checked="toggleSelectAll"
                                 />
@@ -318,8 +347,8 @@
                         </div>
 
                         <!-- Contact Cards -->
-                        <div 
-                            v-for="contact in contacts.data" 
+                        <div
+                            v-for="contact in contacts.data"
                             :key="contact.id"
                             class="border rounded-lg p-4 space-y-3"
                             :class="!contact.read ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800' : ''"
@@ -327,7 +356,7 @@
                             <!-- Card Header -->
                             <div class="flex items-start justify-between">
                                 <div class="flex items-start gap-3 flex-1">
-                                    <Checkbox 
+                                    <Checkbox
                                         :checked="selectedContacts.includes(contact.id)"
                                         @update:checked="toggleContact(contact.id)"
                                         class="mt-1"
@@ -347,16 +376,16 @@
                                     </div>
                                 </div>
                                 <div class="flex gap-1 ml-2">
-                                    <Button 
-                                        size="sm" 
+                                    <Button
+                                        size="sm"
                                         variant="ghost"
                                         @click="toggleReadStatus(contact)"
                                     >
                                         <MailOpen v-if="!contact.read" class="h-4 w-4" />
                                         <Mail v-else class="h-4 w-4" />
                                     </Button>
-                                    <Button 
-                                        size="sm" 
+                                    <Button
+                                        size="sm"
                                         variant="ghost"
                                         @click="deleteContact(contact)"
                                     >
@@ -388,7 +417,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Pagination -->
                     <div v-if="contacts.last_page > 1" class="border-t p-4">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -396,8 +425,8 @@
                                 Mostrando {{ contacts.from }} - {{ contacts.to }} di {{ contacts.total }} risultati
                             </div>
                             <div class="flex gap-2 justify-center sm:justify-end">
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     size="sm"
                                     :disabled="!contacts.prev_page_url"
                                     @click="goToPage(contacts.current_page - 1)"
@@ -405,8 +434,8 @@
                                 >
                                     Precedente
                                 </Button>
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     size="sm"
                                     :disabled="!contacts.next_page_url"
                                     @click="goToPage(contacts.current_page + 1)"
@@ -436,15 +465,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { 
-    Mail, 
-    MailOpen, 
-    Calendar, 
-    CalendarDays, 
-    Download, 
-    ArrowUpDown, 
+import {
+    Mail,
+    MailOpen,
+    Calendar,
+    CalendarDays,
+    Download,
+    ArrowUpDown,
     Trash,
-    X
+    X,
+    Minus
 } from 'lucide-vue-next'
 
 interface Contact {
@@ -488,6 +518,7 @@ interface Props {
         date_to?: string
         sort_by?: string
         sort_order?: string
+        per_page?: string
     }
 }
 
@@ -507,7 +538,8 @@ const filters = reactive({
     date_from: props.filters.date_from || '',
     date_to: props.filters.date_to || '',
     sort_by: props.filters.sort_by || 'created_at',
-    sort_order: props.filters.sort_order || 'desc'
+    sort_order: props.filters.sort_order || 'desc',
+    per_page: String(props.filters?.per_page || '20')
 })
 
 // Watch for contacts data changes and reset selection
@@ -522,7 +554,7 @@ watch(() => props.contacts.current_page, () => {
 })
 
 const allSelected = computed(() => {
-    return props.contacts.data.length > 0 && 
+    return props.contacts.data.length > 0 &&
            selectedContacts.value.length === props.contacts.data.length
 })
 
@@ -562,7 +594,7 @@ const debouncedSearch = debounce(() => {
 function applyFilters() {
     // Reset selection when applying filters
     selectedContacts.value = []
-    
+
     const filterParams = {
         ...filters,
         status: filters.status === 'all' ? '' : filters.status,
@@ -578,7 +610,7 @@ function applyFilters() {
 function clearFilters() {
     // Reset selection when clearing filters
     selectedContacts.value = []
-    
+
     Object.assign(filters, {
         status: 'all',
         search: '',
@@ -614,7 +646,7 @@ function toggleContact(contactId: number) {
     // Create a new array to ensure reactivity
     const currentSelection = [...selectedContacts.value]
     const index = currentSelection.indexOf(contactId)
-    
+
     if (index > -1) {
         // Remove contact from selection
         currentSelection.splice(index, 1)
@@ -622,7 +654,7 @@ function toggleContact(contactId: number) {
         // Add contact to selection
         currentSelection.push(contactId)
     }
-    
+
     selectedContacts.value = currentSelection
 }
 
@@ -655,7 +687,7 @@ function deleteContact(contact: Contact) {
 
 function markSelectedAsRead() {
     if (selectedContacts.value.length === 0) return
-    
+
     router.post(route('contacts.mark-multiple-read'), {
         contact_ids: selectedContacts.value
     }, {
@@ -669,7 +701,7 @@ function markSelectedAsRead() {
 
 function deleteSelected() {
     if (selectedContacts.value.length === 0) return
-    
+
     if (confirm(`Sei sicuro di voler eliminare ${selectedContacts.value.length} contatti?`)) {
         router.delete(route('contacts.destroy-multiple'), {
             data: { contact_ids: selectedContacts.value },
@@ -688,20 +720,23 @@ function exportContacts() {
         status: filters.status === 'all' ? '' : filters.status,
         origin: filters.origin === 'all' ? '' : filters.origin
     }
-    window.open(route('contacts.export') + '?' + new URLSearchParams(filterParams).toString())
+    const params = Object.fromEntries(
+        Object.entries(filterParams).map(([k, v]) => [k, String(v)])
+    )
+    window.open(route('contacts.export') + '?' + new URLSearchParams(params).toString())
 }
 
 function goToPage(page: number) {
     // Reset selection when changing page
     selectedContacts.value = []
-    
+
     const filterParams = {
         ...filters,
         status: filters.status === 'all' ? '' : filters.status,
         origin: filters.origin === 'all' ? '' : filters.origin,
         page: page.toString()
     }
-    
+
     router.get(route('contacts.index'), filterParams, {
         preserveState: true,
         preserveScroll: true
@@ -717,4 +752,4 @@ function formatDate(dateString: string) {
         minute: '2-digit'
     })
 }
-</script> 
+</script>
