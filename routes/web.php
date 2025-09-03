@@ -35,4 +35,5 @@ require __DIR__ . '/settings.php';
 require __DIR__ . '/salary.php';
 require __DIR__ . '/payslip.php';
 require __DIR__ . '/contact.php';
+require __DIR__ . '/notes.php';
 require __DIR__ . '/auth.php';

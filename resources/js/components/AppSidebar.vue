@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { LayoutGrid, Euro, FileText, Mail } from 'lucide-vue-next';
+import { LayoutGrid, Euro, FileText, Mail, StickyNote } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -33,6 +33,11 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: '/contacts',
         icon: Mail,
         badge: unreadContactsCount.value > 0 ? unreadContactsCount.value : undefined,
+    },
+    {
+        title: 'Note',
+        href: '/notes',
+        icon: StickyNote,
     },
 ]);
 </script>
